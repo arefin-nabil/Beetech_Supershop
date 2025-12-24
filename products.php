@@ -269,9 +269,6 @@ function resetForm() {
     document.getElementById('productId').value = '';
     document.getElementById('modalTitle').innerText = 'Add Product';
 }
-    document.getElementById('productId').value = '';
-    document.getElementById('modalTitle').innerText = 'Add Product';
-}
 
 function editProduct(product) {
     document.getElementById('formAction').value = 'edit';
