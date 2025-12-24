@@ -153,7 +153,6 @@ $items = $stmt->fetchAll();
     <div class="text-center mt-4" style="font-size: 0.8rem;">
         <p>Thank you for shopping with us!</p>
         <p>Software Developed by <strong>Arefin Nabil</strong></p>
-        <!-- <p>Software Developed by <strong>Antigravity</strong></p> -->
     </div>
 </div>
 
