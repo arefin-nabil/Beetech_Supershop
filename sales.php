@@ -77,6 +77,7 @@ $total_pages = ceil($total_rows / $limit);
                         <tr>
                             <th>Invoice #</th>
                             <th>Date</th>
+                            <th>Salesman</th>
                             <th>Customer</th>
                             <th>BeetechID</th>
                             <th>Items</th>
@@ -96,6 +97,7 @@ $total_pages = ceil($total_rows / $limit);
                                 </a>
                             </td>
                             <td class="small text-secondary"><?php echo date('d M Y, h:i A', strtotime($s['created_at'])); ?></td>
+                            <td><span class="badge bg-light text-dark border"><?php echo ucfirst($s['cashier_name'] ?? 'Unknown'); ?></span></td>
                             <td><?php echo htmlspecialchars($s['customer_name']); ?></td>
                             <td>
                                  <?php if(!empty($s['beetech_id'])): ?>

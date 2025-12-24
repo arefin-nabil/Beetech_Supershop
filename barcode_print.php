@@ -118,6 +118,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_print'])) {
     <!-- Grid of labels generated here -->
 </div>
 
+
+
+<style>
+/* A4 Print Layout */
+@media print {
+    body {
+        background: white;
+    }
+    .no-print, .navbar, .sidebar, .card, .btn {
+        display: none !important;
+    }
+    
+    /* Ensure only print area is visible and takes up space */
+    body * {
+        visibility: hidden;
+    }
+    #printArea, #printArea * {
+        visibility: visible;
+    }
+    
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr); /* 4 columns for A4 */
+        gap: 15px; 
+        padding: 20px;
+    }
+    
+    .barcode-label {
+        border: 1px dotted #999;
+        padding: 5px;
+        text-align: center;
+        page-break-inside: avoid;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px;
+        break-inside: avoid;
+    }
+    
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
+}
+
+.barcode-label {
+    overflow: hidden;
+    font-family: sans-serif;
+}
+.label-name {
+    font-size: 11px;
+    font-weight: bold;
+    max-width: 100%;
+    margin-bottom: 2px;
+}
+.label-price {
+    font-size: 13px;
+    margin-top: 2px;
+}
+</style>
+
+<?php require_once 'includes/footer.php'; ?>
+
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
 <script>
@@ -219,6 +287,7 @@ function removeFromQueue(index) {
 function updateCount(index, val) {
     let count = parseInt(val);
     if(isNaN(count) || count < 1) count = 1;
+    console.log(`Updating item ${index} count to ${count}`);
     queue[index].count = count;
 }
 
@@ -266,6 +335,7 @@ function generatePreview() {
     let showName = $('#showName').is(':checked');
 
     queue.forEach(item => {
+        console.log(`Generating ${item.count} labels for ${item.name}`);
         for(let i=0; i < item.count; i++) {
             // Create Label Element
             let label = $(`
@@ -293,69 +363,3 @@ function generatePreview() {
 }
 
 </script>
-
-<style>
-/* A4 Print Layout */
-@media print {
-    body {
-        background: white;
-    }
-    .no-print, .navbar, .sidebar, .card, .btn {
-        display: none !important;
-    }
-    
-    /* Ensure only print area is visible and takes up space */
-    body * {
-        visibility: hidden;
-    }
-    #printArea, #printArea * {
-        visibility: visible;
-    }
-    
-    #printArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        display: grid !important;
-        grid-template-columns: repeat(4, 1fr); /* 4 columns for A4 */
-        gap: 15px; 
-        padding: 20px;
-    }
-    
-    .barcode-label {
-        border: 1px dotted #999;
-        padding: 5px;
-        text-align: center;
-        page-break-inside: avoid;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100px;
-        break-inside: avoid;
-    }
-    
-    @page {
-        size: A4;
-        margin: 10mm;
-    }
-}
-
-.barcode-label {
-    overflow: hidden;
-    font-family: sans-serif;
-}
-.label-name {
-    font-size: 11px;
-    font-weight: bold;
-    max-width: 100%;
-    margin-bottom: 2px;
-}
-.label-price {
-    font-size: 13px;
-    margin-top: 2px;
-}
-</style>
-
-<?php require_once 'includes/footer.php'; ?>

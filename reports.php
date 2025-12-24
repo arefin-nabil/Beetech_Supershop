@@ -10,6 +10,11 @@ require_once 'includes/header.php';
 $start_date = $_GET['start_date'] ?? date('Y-m-01'); // Default to first day of current month
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 $report_type = $_GET['report_type'] ?? 'daily'; // daily, monthly
+$user_id = $_GET['user_id'] ?? '';
+
+// Fetch Users for Filter
+$users_stmt = $pdo->query("SELECT id, username FROM users ORDER BY username");
+$users_list = $users_stmt->fetchAll();
 
 // Validate dates
 if ($start_date > $end_date) {
@@ -19,33 +24,31 @@ if ($start_date > $end_date) {
 }
 
 // Prepare Query
-$where_sql = "DATE(created_at) BETWEEN :start AND :end";
+$where_sql = "DATE(s.created_at) BETWEEN :start AND :end";
+$params = ['start' => $start_date, 'end' => $end_date];
+
+if (!empty($user_id)) {
+    $where_sql .= " AND s.user_id = :uid";
+    $params['uid'] = $user_id;
+}
+
 $group_sql = "";
 $date_format_sql = "";
 $label_format = "";
 
 if ($report_type === 'monthly') {
-    $group_sql = "GROUP BY YEAR(created_at), MONTH(created_at)";
-    $date_format_sql = "DATE_FORMAT(created_at, '%Y-%m')"; // For sorting/grouping
-    $label_format = "M Y"; // PHP format
+    // Monthly
+    $group_sql = "GROUP BY YEAR(created_at), MONTH(created_at)"; 
+    $date_format_sql = "DATE_FORMAT(s.created_at, '%Y-%m-01')"; // Adjusted for new query
+    $label_format = "M Y"; 
 } else {
     // Daily
     $group_sql = "GROUP BY DATE(created_at)";
-    $date_format_sql = "DATE(created_at)";
+    $date_format_sql = "DATE(s.created_at)"; 
     $label_format = "d M Y";
 }
 
-$sql = "SELECT 
-            $date_format_sql as report_date, 
-            COUNT(*) as total_sales, 
-            SUM(total_amount) as total_revenue,
-            SUM(final_discount_amount) as total_discount,
-            SUM(total_amount - (SELECT SUM(subtotal - (unit_buy_price * quantity)) FROM sale_items WHERE sale_id = sales.id)) as estimated_cost, -- Complex approximation, better to sum items directly usually, but let's stick to simple aggregates or subquery
-            (SELECT SUM((unit_sell_price - unit_buy_price) * quantity) FROM sale_items WHERE sale_id IN (SELECT id FROM sales as s2 WHERE $date_format_sql = report_date )) as total_profit -- This is tricky in single query with group by
-        FROM sales 
-        WHERE $where_sql 
-        $group_sql 
-        ORDER BY report_date DESC";
+// ... (skipping legacy query setup for now as we replaced it below)
 
 // Simplified Query for Profit. 
 // A better approach is to join sale_items
@@ -56,12 +59,12 @@ $sql = "SELECT
             SUM((si.unit_sell_price - si.unit_buy_price) * si.quantity) as gross_profit
         FROM sales s
         JOIN sale_items si ON s.id = si.sale_id
-        WHERE DATE(s.created_at) BETWEEN :start AND :end
+        WHERE $where_sql
         GROUP BY date_group
         ORDER BY date_group DESC";
 
 $stmt = $pdo->prepare($sql);
-$stmt->execute(['start' => $start_date, 'end' => $end_date]);
+$stmt->execute($params);
 $reports = $stmt->fetchAll();
 
 // Calculate Totals for Footer
@@ -86,23 +89,34 @@ foreach ($reports as $r) {
         <div class="card glass-panel border-0">
             <div class="card-body">
                 <form method="GET" class="row g-3 align-items-end">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label small fw-bold text-secondary">Start Date</label>
                         <input type="date" name="start_date" class="form-control" value="<?php echo $start_date; ?>">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label small fw-bold text-secondary">End Date</label>
                         <input type="date" name="end_date" class="form-control" value="<?php echo $end_date; ?>">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label small fw-bold text-secondary">Report Type</label>
                         <select name="report_type" class="form-select">
                             <option value="daily" <?php echo $report_type == 'daily' ? 'selected' : ''; ?>>Daily</option>
                             <option value="monthly" <?php echo $report_type == 'monthly' ? 'selected' : ''; ?>>Monthly</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i> Generate Report</button>
+                    <div class="col-md-2">
+                         <label class="form-label small fw-bold text-secondary">Salesman</label>
+                         <select name="user_id" class="form-select">
+                             <option value="">All</option>
+                             <?php foreach($users_list as $u): ?>
+                                <option value="<?php echo $u['id']; ?>" <?php echo $user_id == $u['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars(ucfirst($u['username'])); ?>
+                                </option>
+                             <?php endforeach; ?>
+                         </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i> Filter</button>
                     </div>
                 </form>
             </div>

@@ -12,7 +12,7 @@ define('CURRENCY', '৳');
 define('TIMEZONE', 'Asia/Dhaka');
 
 // Business Logic Settings
-define('BEETECH_PROFIT_SHARE_PERCENT', 0.35); // 50% of profit goes to Beetech Points calculation
+define('BEETECH_PROFIT_SHARE_PERCENT', 0.50); // 50% of profit goes to Beetech Points calculation
 
 // Error Reporting (Turn off for public production, On for dev)
 error_reporting(E_ALL);
