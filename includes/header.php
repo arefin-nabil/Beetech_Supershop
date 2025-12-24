@@ -50,6 +50,10 @@ $page_title = $page_title ?? APP_NAME;
                 <i class="fas fa-receipt"></i> Sales History
             </a>
 
+            <a href="reports.php" class="nav-link <?php echo (($current_page ?? '') == 'reports') ? 'active' : ''; ?>">
+                <i class="fas fa-chart-line"></i> Reports
+            </a>
+
             <?php if(is_admin()): ?>
             <div class="my-3 px-3 text-uppercase text-xs text-secondary fw-bold" style="font-size: 0.75rem;">Admin</div>
             
@@ -57,7 +61,15 @@ $page_title = $page_title ?? APP_NAME;
                 <i class="fas fa-box"></i> Products
             </a>
             
-            <!-- Future: Users/Settings -->
+             <a href="users.php" class="nav-link <?php echo (($current_page ?? '') == 'users') ? 'active' : ''; ?>">
+                <i class="fas fa-user-shield"></i> Users
+            </a>
+
+            <a href="barcode_print.php" class="nav-link <?php echo (($current_page ?? '') == 'barcode_print') ? 'active' : ''; ?>">
+                <i class="fas fa-barcode"></i> Barcode Print
+            </a>
+
+            <!-- Future: Settings -->
             <?php endif; ?>
 
             <a href="logout.php" class="nav-link text-danger mt-5">

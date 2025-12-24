@@ -107,7 +107,7 @@ $total_pages = ceil($total_rows / $limit);
                             <td><?php echo $s['item_count']; ?></td>
                             <td class="fw-bold"><?php echo format_money($s['total_amount']); ?></td>
                             <td class="text-secondary"><?php echo format_money($s['final_discount_amount']); ?></td>
-                            <td class="fw-bold text-success"><?php echo $s['points_earned']; ?> Pts</td>
+                            <td class="fw-bold text-success"><?php echo number_format($s['points_earned'], 2); ?> Pts</td>
                             
                              <!-- Point Given Logic -->
                             <td class="text-center">

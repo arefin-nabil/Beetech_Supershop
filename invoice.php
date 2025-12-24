@@ -91,7 +91,9 @@ $items = $stmt->fetchAll();
 
 <div class="invoice-box">
     <div class="header-title"><?php echo APP_NAME; ?></div>
-    <div class="header-sub">Dhaka, Bangladesh</div>
+    <div class="header-sub">Barmi Bazar, Sreepur, Gazipur 
+        <br> Phone: 01881196146 / 01915430867 
+        <br> Email: barmidiscshop@gmail.com</div>
     
     <hr style="border-top: 1px dashed #000;">
     
@@ -144,13 +146,14 @@ $items = $stmt->fetchAll();
     <!-- Beetech Rewards Section -->
     <div class="beetech-box">
         <div style="font-size: 0.8rem; text-transform: uppercase;">You Earned Beetech Points</div>
-        <div style="font-size: 2rem; font-weight: bold;"><?php echo $sale['points_earned']; ?></div>
+        <div style="font-size: 2rem; font-weight: bold;"><?php echo number_format($sale['points_earned'], 2); ?></div>
         <div style="font-size: 0.8rem;">(Based on your purchase)</div>
     </div>
     
     <div class="text-center mt-4" style="font-size: 0.8rem;">
         <p>Thank you for shopping with us!</p>
-        <p>Software Developed by <strong>Antigravity</strong></p>
+        <p>Software Developed by <strong>Arefin Nabil</strong></p>
+        <!-- <p>Software Developed by <strong>Antigravity</strong></p> -->
     </div>
 </div>
 

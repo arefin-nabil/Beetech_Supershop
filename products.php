@@ -97,54 +97,59 @@ $total_pages = ceil($total_rows / $limit);
             </div>
         </form>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="bg-light">
-                    <tr>
-                        <th>Barcode</th>
-                        <th>Name</th>
-                        <th>Buy Price</th>
-                        <th>Sell Price</th>
-                        <th>Stock</th>
-                        <th>Alert</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($products as $p): ?>
-                    <tr>
-                        <td class="font-monospace text-secondary"><?php echo htmlspecialchars($p['barcode']); ?></td>
-                        <td class="fw-medium"><?php echo htmlspecialchars($p['name']); ?></td>
-                        <td><?php echo format_money($p['buy_price']); ?></td>
-                        <td class="fw-bold text-success"><?php echo format_money($p['sell_price']); ?></td>
-                        <td>
-                            <?php if($p['stock_qty'] <= $p['alert_threshold']): ?>
-                                <span class="badge bg-danger rounded-pill"><?php echo $p['stock_qty']; ?></span>
-                            <?php else: ?>
-                                <span class="badge bg-success rounded-pill"><?php echo $p['stock_qty']; ?></span>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo $p['alert_threshold']; ?></td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-light text-primary me-2" 
-                                onclick='editProduct(<?php echo json_encode($p); ?>)'>
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <form method="POST" action="" class="d-inline" onsubmit="return confirm('Are you sure?');">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="product_id" value="<?php echo $p['id']; ?>">
-                                <button type="submit" class="btn btn-sm btn-light text-danger"><i class="fas fa-trash"></i></button>
-                            </form>
-                            <!-- Print Barcode Btn -->
-                            <button class="btn btn-sm btn-light text-dark" onclick="printBarcode('<?php echo $p['barcode']; ?>', '<?php echo addslashes($p['name']); ?>')">
-                                <i class="fas fa-barcode"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+        <form action="barcode_print.php" method="POST" id="bulkPrintForm">
+            <div class="d-flex justify-content-end mb-2">
+                <button type="submit" name="bulk_print" class="btn btn-outline-dark btn-sm">
+                    <i class="fas fa-barcode me-1"></i> Add Selected to Print Queue
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox" class="form-check-input" id="selectAll"></th>
+                            <th>Barcode</th>
+                            <th>Name</th>
+                            <th>Buy Price</th>
+                            <th>Sell Price</th>
+                            <th>Stock</th>
+                            <th>Alert</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($products as $p): ?>
+                        <tr>
+                            <td><input type="checkbox" name="selected_products[]" value="<?php echo $p['id']; ?>" class="form-check-input product-check"></td>
+                            <td class="font-monospace text-secondary"><?php echo htmlspecialchars($p['barcode']); ?></td>
+                            <td class="fw-medium"><?php echo htmlspecialchars($p['name']); ?></td>
+                            <td><?php echo format_money($p['buy_price']); ?></td>
+                            <td class="fw-bold text-success"><?php echo format_money($p['sell_price']); ?></td>
+                            <td>
+                                <?php if($p['stock_qty'] <= $p['alert_threshold']): ?>
+                                    <span class="badge bg-danger rounded-pill"><?php echo $p['stock_qty']; ?></span>
+                                <?php else: ?>
+                                    <span class="badge bg-success rounded-pill"><?php echo $p['stock_qty']; ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo $p['alert_threshold']; ?></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-light text-primary me-2" 
+                                    onclick='editProduct(<?php echo json_encode($p); ?>)'>
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <!-- Individual Delete Form (Need to be careful nesting forms, better to use JS or keep outside) -->
+                                <!-- Since we wrapped main table in form, we shouldn't nest another form. Change delete to link or JS submit -->
+                                <button type="button" class="btn btn-sm btn-light text-danger" onclick="deleteProduct(<?php echo $p['id']; ?>)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </form>
 
         <!-- Pagination -->
         <nav class="mt-4">
@@ -236,10 +241,34 @@ $total_pages = ceil($total_rows / $limit);
 <!-- JsBarcode Library -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
+</script>
+
+<!-- Hidden form for deletion -->
+<form id="deleteForm" method="POST" style="display:none;">
+    <input type="hidden" name="action" value="delete">
+    <input type="hidden" name="product_id" id="deleteId">
+</form>
+
 <script>
+// Select All Checkbox
+document.getElementById('selectAll').addEventListener('change', function() {
+    let checkboxes = document.querySelectorAll('.product-check');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+function deleteProduct(id) {
+    if(confirm('Are you sure you want to delete this product?')) {
+        document.getElementById('deleteId').value = id;
+        document.getElementById('deleteForm').submit();
+    }
+}
+
 function resetForm() {
     document.getElementById('productForm').reset();
     document.getElementById('formAction').value = 'add';
+    document.getElementById('productId').value = '';
+    document.getElementById('modalTitle').innerText = 'Add Product';
+}
     document.getElementById('productId').value = '';
     document.getElementById('modalTitle').innerText = 'Add Product';
 }

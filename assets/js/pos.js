@@ -6,6 +6,7 @@ let selectedCustomer = null;
 
 $(document).ready(function () {
     loadProducts(''); // Initial load
+    $('#productSearch').focus(); // Auto focus for immediate scanning
 
     // Debounce search
     let debounceTimer;
@@ -79,6 +80,75 @@ $(document).ready(function () {
             $dropdown.hide();
         }
     });
+
+    // Create Customer Form Handler - Delegated event
+    $(document).on('submit', '#createCustomerForm', function (e) {
+        e.preventDefault();
+
+        let form = $(this);
+        let btn = $('#saveCustomerBtn');
+        let msg = $('#customerMsg');
+        let originalText = "Create Customer";
+
+        console.log("Create Customer Form Submitted");
+
+        msg.addClass('d-none').removeClass('alert-success alert-danger');
+
+        // Simple validation check
+        if (!form[0].checkValidity()) {
+            form[0].reportValidity();
+            return;
+        }
+
+        // Serialize
+        let data = {};
+        form.serializeArray().forEach(item => data[item.name] = item.value);
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+
+        $.ajax({
+            url: 'api.php?action=create_customer',
+            type: 'POST',
+            data: JSON.stringify(data),
+            contentType: 'application/json',
+            dataType: 'json',
+            success: function (res) {
+                console.log("Response", res);
+                if (res.success) {
+                    msg.text(res.message).addClass('alert alert-success').removeClass('d-none');
+
+                    setTimeout(() => {
+                        // Hide modal safely
+                        const modalEl = document.getElementById('createCustomerModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) {
+                            modal.hide();
+                        } else {
+                            // Fallback if instance not found (shouldn't happen if open)
+                            const newModal = new bootstrap.Modal(modalEl);
+                            newModal.hide();
+                        }
+
+                        form[0].reset();
+                        msg.addClass('d-none');
+                        btn.prop('disabled', false).html(originalText); // Re-enable for next time
+
+                        // Select the new customer
+                        selectCustomer(res.customer);
+                    }, 1000);
+
+                } else {
+                    msg.text(res.message || 'Error creating customer').addClass('alert alert-danger').removeClass('d-none');
+                    btn.prop('disabled', false).html(originalText);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error(xhr.responseText);
+                msg.text('System Error: ' + error).addClass('alert alert-danger').removeClass('d-none');
+                btn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
 });
 
 function loadProducts(term) {
@@ -91,7 +161,7 @@ function loadProducts(term) {
             console.error("API Error:", res.message);
             $('#productGrid').html('<div class="col-12 text-center mt-5 text-danger">Error loading products: ' + (res.message || 'Unknown error') + '</div>');
         }
-    }).fail(function(jqXHR, textStatus, errorThrown) {
+    }).fail(function (jqXHR, textStatus, errorThrown) {
         console.error("AJAX Fail:", textStatus, errorThrown);
         $('#productGrid').html('<div class="col-12 text-center mt-5 text-danger">Connection Failed. Check console.</div>');
     });
@@ -101,7 +171,7 @@ function fetchProductByBarcode(barcode) {
     $.get('api.php', { action: 'get_product_by_barcode', barcode: barcode }, function (res) {
         if (res.success && res.found) {
             addToCart(res.data);
-            $('#productSearch').val(''); // Clear on success
+            $('#productSearch').val('').focus(); // Clear and Keep Focus for next scan
         } else {
             // If search was generic and not found, loadProducts is already handling it via input event
             if (!res.found && barcode.length > 5) {
@@ -201,7 +271,9 @@ function renderCart() {
         total += lineTotal;
 
         let profit = (item.sell_price - item.buy_price) * item.qty;
-        totalDiscount += (profit * 0.5);
+        // Use injected config or default to 0.5
+        let sharePercent = (typeof POS_CONFIG !== 'undefined') ? POS_CONFIG.profit_share_percent : 0.5;
+        totalDiscount += (profit * sharePercent);
 
         let row = $(`
             <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
@@ -228,8 +300,8 @@ function renderCart() {
 
     // Calculate Est Points
     // 6 Tk Discount = 1 Point
-    let estPoints = Math.floor(totalDiscount / 6);
-    $('#estPoints').text(estPoints);
+    let estPoints = totalDiscount / 6;
+    $('#estPoints').text(estPoints.toFixed(2));
 
     // Enable checkout only if customer selected
     if (selectedCustomer) {

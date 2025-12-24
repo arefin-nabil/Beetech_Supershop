@@ -82,7 +82,7 @@ CREATE TABLE `sales` (
   `user_id` int(11) NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
   `final_discount_amount` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Beetech Discount Total',
-  `points_earned` int(11) NOT NULL DEFAULT 0,
+  `points_earned` decimal(10,2) NOT NULL DEFAULT 0.00,
   `points_given` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),

@@ -43,6 +43,43 @@ try {
         $customers = $stmt->fetchAll();
         echo json_encode(['success' => true, 'data' => $customers]);
 
+    } elseif ($action === 'create_customer') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $name = clean_input($input['name'] ?? '');
+        $mobile = clean_input($input['mobile'] ?? '');
+        $address = clean_input($input['address'] ?? '');
+        $beetech_id = clean_input($input['beetech_id'] ?? '');
+
+        if (empty($name) || empty($mobile)) {
+            echo json_encode(['success' => false, 'message' => 'Name and Mobile are required']);
+            exit;
+        }
+
+        // Check duplicate mobile
+        $stmt = $pdo->prepare("SELECT id FROM customers WHERE mobile = ?");
+        $stmt->execute([$mobile]);
+        if ($stmt->fetch()) {
+            echo json_encode(['success' => false, 'message' => 'Customer with this mobile already exists']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO customers (name, mobile, address, beetech_id, created_at) VALUES (?, ?, ?, ?, NOW())");
+        if ($stmt->execute([$name, $mobile, $address, $beetech_id])) {
+            $id = $pdo->lastInsertId();
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Customer created successfully',
+                'customer' => [
+                    'id' => $id,
+                    'name' => $name,
+                    'mobile' => $mobile,
+                    'beetech_id' => $beetech_id
+                ]
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Database error']);
+        }
+
     } elseif ($action === 'checkout') {
         // Read JSON Input
         $input = json_decode(file_get_contents('php://input'), true);
@@ -111,13 +148,15 @@ try {
 
         // 2. Beetech Rules
         // Profit = Sell - Buy (Already calculated as $total_profit)
-        // 50% of Profit = Beetech Discount
-        $beetech_discount = $total_profit * 0.50;
+        // Share of Profit = Beetech Discount
+        $beetech_discount = $total_profit * BEETECH_PROFIT_SHARE_PERCENT;
         
         // Point Conversion: 6 TK = 1 Point (from discount amount)
-        // "6 TK = 1 Beetech Point" -> Is it 6tk of SALE or 6tk of DISCOUNT?
-        // "50% = 6 TK -> Customer earns 1 point" (Example says Profit 12, 50% is 6, Points is 1. So 6tk Discount = 1 Point)
-        $points_earned = floor($beetech_discount / 6);
+        // User wants decimal points. 
+        // e.g. 4.50 tk discount / 6 = 0.75 points
+        // 7.50 / 6 = 1.25 points
+        $points_earned = $beetech_discount / 6;
+        $points_earned = round($points_earned, 2); // Round to 2 decimals for cleaner storage
 
         // 3. Create Invoice
         $invoice_no = 'INV-' . strtoupper(generate_random_string(6)); // Or sequential

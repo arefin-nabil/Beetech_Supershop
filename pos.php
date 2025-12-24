@@ -7,6 +7,11 @@ require_once 'includes/header.php';
 // Initial fetch of products for grid (Top 20 or popular)
 // We will fetch via AJAX usually, but initial load can be PHP
 ?>
+<script>
+    const POS_CONFIG = {
+        profit_share_percent: <?php echo BEETECH_PROFIT_SHARE_PERCENT; ?>
+    };
+</script>
 <div class="pos-layout">
     <!-- Left: Product Section -->
     <div class="d-flex flex-column h-100 overflow-hidden">
@@ -37,6 +42,9 @@ require_once 'includes/header.php';
                 <div class="input-group">
                     <span class="input-group-text bg-white"><i class="fas fa-user-circle"></i></span>
                     <input type="text" id="customerSearch" class="form-control" placeholder="Search Mobile / BeetechID">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#createCustomerModal" title="Add New Customer">
+                        <i class="fas fa-plus"></i>
+                    </button>
                     <input type="hidden" id="selectedCustomerId">
                 </div>
             </div>
@@ -85,7 +93,45 @@ require_once 'includes/header.php';
     </div>
 </div>
 
+
 <!-- Customer Search Modal (Dropdown like behavior implemented in JS, but fallback modal if needed? No, inline is better for POS) -->
 
+<!-- Create Customer Modal -->
+<div class="modal fade" id="createCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content glass-panel border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary">Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="customerMsg" class="alert d-none"></div>
+                <form id="createCustomerForm">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small text-uppercase fw-bold">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small text-uppercase fw-bold">Mobile <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="mobile" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small text-uppercase fw-bold">Address</label>
+                        <textarea class="form-control" name="address" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small text-uppercase fw-bold">Beetech ID (Optional)</label>
+                        <input type="text" class="form-control" name="beetech_id">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" id="saveCustomerBtn" class="btn btn-primary btn-lg rounded-pill">Create Customer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <?php require_once 'includes/footer.php'; ?>
-<script src="assets/js/pos.js"></script>
+<script src="assets/js/pos.js?v=<?php echo time(); ?>"></script>
