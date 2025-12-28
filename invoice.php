@@ -3,7 +3,7 @@
 require_once 'config.php';
 require_once 'includes/db_connect.php';
 require_once 'includes/functions.php';
-require_once 'includes/auth.php'; // ensure login or at least session
+require_once 'includes/auth.php';
 
 require_login();
 
@@ -27,134 +27,248 @@ $stmt = $pdo->prepare("SELECT si.*, p.name FROM sale_items si JOIN products p ON
 $stmt->execute([$id]);
 $items = $stmt->fetchAll();
 
+// Calculate Subtotal (since total_amount is final, we might want to show subtotal before discount)
+// Assuming total_amount = (subtotal - discount). 
+// Currently DB stores item subtotal (unit * qty). Sum of these is standard subtotal.
+$calc_subtotal = 0;
+foreach($items as $i) {
+    $calc_subtotal += $i['subtotal'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice #<?php echo $sale['invoice_no']; ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #e0e0e0; font-family: 'Courier New', monospace; }
-        .invoice-box {
-            background: white;
-            width: 148mm; /* A5 Width */
-            min-height: 210mm; /* A5 Height */
-            margin: 20px auto;
-            padding: 10mm;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        
-        .header-title { font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 5px; }
-        .header-sub { text-align: center; margin-bottom: 20px; font-size: 0.9rem; }
-        
-        .meta-table td { padding: 2px 0; }
-        .items-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .items-table th { border-bottom: 1px dashed black; text-align: left; padding: 5px 0; }
-        .items-table td { padding: 5px 0; }
-        .total-row td { border-top: 1px dashed black; padding-top: 10px; font-weight: bold; }
-        
-        .beetech-box {
-            border: 2px solid #000;
-            padding: 8px;
-            margin-top: 20px;
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 13px; /* Slightly larger for clear 80mm printing */
+            background: #f0f0f0;
+            color: #000;
+        }
+
+        /* Screen Wrapper */
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Buttons for Screen */
+        .screen-actions {
+            margin-bottom: 20px;
             text-align: center;
         }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            margin: 0 5px;
+            display: inline-block;
+            font-family: sans-serif;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #007bff;
+            color: #007bff;
+        }
+        .btn:hover { opacity: 0.9; }
+
+        /* Receipt Container */
+        .receipt {
+            background: white;
+            width: 100%;
+            max-width: 78mm; /* Optimized for 80mm Paper (XP80T). Will scale for 58mm if needed. */
+            padding: 5px 0;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* Receipt Elements */
+        .header { text-align: center; margin-bottom: 10px; }
+        .store-name { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
+        .store-info { font-size: 10px; }
         
+        .divider { border-top: 1px dashed #000; margin: 5px 0; }
+        .divider-solid { border-top: 1px solid #000; margin: 5px 0; }
+
+        .meta { font-size: 10px; margin-bottom: 5px; }
+        .meta-row { display: flex; justify-content: space-between; }
+
+        /* Items Table - Flex or Grid approach usually better for responsiveness than Table */
+        .items-header { 
+            display: flex; 
+            font-weight: bold; 
+            font-size: 10px; 
+            border-bottom: 1px solid #000; 
+            padding-bottom: 2px;
+            margin-bottom: 5px;
+        }
+        .item-row { 
+            margin-bottom: 4px; 
+            font-size: 11px;
+        }
+        .item-name { 
+            font-weight: 500; 
+            margin-bottom: 1px;
+        }
+        .item-data { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 10px;
+        }
+
+        .totals { 
+            margin-top: 10px; 
+            text-align: right; 
+            font-size: 11px;
+        }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .grand-total { font-weight: bold; font-size: 14px; margin-top: 5px; }
+
+        .beetech {
+            margin-top: 10px;
+            text-align: center;
+            border: 1px solid #000;
+            padding: 5px;
+            font-size: 10px;
+        }
+        .beetech-pts { font-size: 14px; font-weight: bold; }
+
+        .footer { text-align: center; margin-top: 15px; font-size: 10px; }
+
+        /* Print Media Query */
         @media print {
-            body { background: white; }
-            .invoice-box { width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; }
-            .no-print { display: none !important; }
-            @page { size: A5; margin: 10mm; }
+            @page {
+                size: auto; /* Auto height */
+                margin: 0;
+            }
+            body {
+                background: white;
+            }
+            .wrapper {
+                display: block;
+                padding: 0;
+                min-height: auto;
+            }
+            .screen-actions, .no-print {
+                display: none;
+            }
+            .receipt {
+                width: 100%;
+                max-width: 100%; /* Full width of paper */
+                box-shadow: none;
+                padding: 0 2px; /* Safety margin */
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="container mt-4 mb-4 no-print text-center">
-    <div class="card shadow-sm border-0 d-inline-block p-3">
-        <h5 class="text-success mb-3"><i class="fas fa-check-circle me-2"></i>Sale Completed Successfully!</h5>
-        <div class="btn-group">
-            <button onclick="window.print()" class="btn btn-primary btn-lg">
-                <i class="fas fa-print me-2"></i>Print Invoice
-            </button>
-            <a href="pos.php" class="btn btn-outline-primary btn-lg">
-                <i class="fas fa-cash-register me-2"></i>New Sale
-            </a>
-            <a href="sales.php" class="btn btn-outline-secondary btn-lg">
-                <i class="fas fa-list me-2"></i>Sales History
-            </a>
+<div class="wrapper">
+    <!-- Screen Only Actions -->
+    <div class="screen-actions no-print">
+        <button onclick="window.print()" class="btn">Print Receipt</button>
+        <a href="pos.php" class="btn btn-outline">New Sale</a>
+    </div>
+
+    <!-- Receipt Content -->
+    <div class="receipt">
+        <!-- Header -->
+        <div class="header">
+            <div class="store-name"><?php echo APP_NAME; ?></div>
+            <div class="store-info">
+                Barmi Bazar, Sreepur, Gazipur<br>
+                01881196146 / 01915430867
+            </div>
         </div>
+
+        <div class="divider"></div>
+
+        <!-- Meta -->
+        <div class="meta">
+            <div class="meta-row">
+                <span>Inv: <?php echo $sale['invoice_no']; ?></span>
+                <span><?php echo date('d-m-Y H:i', strtotime($sale['created_at'])); ?></span>
+            </div>
+            <div class="meta-row">
+                <span>Cust: <?php echo htmlspecialchars(substr($sale['customer_name'], 0, 15)); ?></span> <!-- Truncate name -->
+                <span>By: <?php echo htmlspecialchars($sale['cashier']); ?></span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Items Head -->
+        <div class="items-header" style="display: flex; width: 100%; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 5px;">
+            <span style="flex: 1;">Item</span>
+            <span style="width: 10%; text-align: center;">Qty</span>
+            <span style="width: 20%; text-align: right;">Price</span>
+            <span style="width: 20%; text-align: right;">Total</span>
+        </div>
+
+        <!-- Items Loop -->
+        <?php foreach($items as $item): ?>
+        <div class="item-row" style="display: flex; width: 100%; margin-bottom: 5px;">
+            <span style="flex: 1; padding-right: 5px; word-wrap: break-word;"><?php echo htmlspecialchars($item['name']); ?></span>
+            <span style="width: 10%; text-align: center; white-space: nowrap;"><?php echo $item['quantity']; ?></span>
+            <span style="width: 20%; text-align: right; white-space: nowrap;"><?php echo number_format($item['unit_sell_price'], 2); ?></span>
+            <span style="width: 20%; text-align: right; white-space: nowrap; font-weight: bold;"><?php echo number_format($item['subtotal'], 2); ?></span>
+        </div>
+        <?php endforeach; ?>
+
+        <div class="divider-solid"></div>
+
+        <!-- Totals -->
+        <div class="totals">
+            <!-- Grand Total -->
+            <div class="total-row grand-total">
+                <span>TOTAL:</span>
+                <span><?php echo number_format($sale['total_amount'], 2); ?></span>
+            </div>
+        </div>
+
+        <!-- Beetech -->
+        <?php if($sale['points_earned'] > 0 || !empty($sale['beetech_id'])): ?>
+        <div class="beetech">
+            <div>Beetech ID: <?php echo htmlspecialchars($sale['beetech_id'] ?? '-'); ?></div>
+            <div style="margin-top: 2px;">Points Earned</div>
+            <div class="beetech-pts"><?php echo number_format($sale['points_earned'], 2); ?></div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Footer -->
+        <div class="footer">
+            Thanks for shopping!<br>
+            Returns valid within 3 days.
+            <br>---
+        </div>
+        
     </div>
 </div>
 
-<div class="invoice-box">
-    <div class="header-title"><?php echo APP_NAME; ?></div>
-    <div class="header-sub">Barmi Bazar, Sreepur, Gazipur 
-        <br> Phone: 01881196146 / 01915430867 
-        <br> Email: barmidiscshop@gmail.com</div>
-    
-    <hr style="border-top: 1px dashed #000;">
-    
-    <table class="w-100 meta-table" style="font-size: 0.9rem;">
-        <tr>
-            <td><strong>Invoice:</strong> <?php echo $sale['invoice_no']; ?></td>
-            <td class="text-end"><strong>Date:</strong> <?php echo date('d-m-Y h:i A', strtotime($sale['created_at'])); ?></td>
-        </tr>
-        <tr>
-            <td><strong>Customer:</strong> <?php echo htmlspecialchars($sale['customer_name']); ?></td>
-             <td class="text-end"><strong>Cashier:</strong> <?php echo htmlspecialchars($sale['cashier']); ?></td>
-        </tr>
-        <tr>
-             <td colspan="2"><strong>Mobile:</strong> <?php echo htmlspecialchars($sale['mobile']); ?></td>
-        </tr>
-        <?php if(!empty($sale['beetech_id'])): ?>
-        <tr style="font-size: 1.1rem;">
-             <td colspan="2" class="pt-2"><strong>BeetechID:</strong> <span style="background: #000; color: #fff; padding: 0 5px;"><?php echo htmlspecialchars($sale['beetech_id']); ?></span></td>
-        </tr>
-        <?php endif; ?>
-    </table>
-    
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th width="50%">Item</th>
-                <th width="15%" class="text-center">Qty</th>
-                <th width="15%" class="text-end">Price</th>
-                <th width="20%" class="text-end">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach($items as $item): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($item['name']); ?></td>
-                <td class="text-center"><?php echo $item['quantity']; ?></td>
-                <td class="text-end"><?php echo number_format($item['unit_sell_price'], 2); ?></td>
-                <td class="text-end"><?php echo number_format($item['subtotal'], 2); ?></td>
-            </tr>
-            <?php endforeach; ?>
-            
-            <tr class="total-row">
-                <td colspan="2"></td>
-                <td class="text-end">Total:</td>
-                <td class="text-end"><?php echo CURRENCY . ' ' . number_format($sale['total_amount'], 2); ?></td>
-            </tr>
-        </tbody>
-    </table>
-    
-    <!-- Beetech Rewards Section -->
-    <div class="beetech-box">
-        <div style="font-size: 0.8rem; text-transform: uppercase;">You Earned Beetech Points</div>
-        <div style="font-size: 2rem; font-weight: bold;"><?php echo number_format($sale['points_earned'], 2); ?></div>
-        <div style="font-size: 0.8rem;">(Based on your purchase)</div>
-    </div>
-    
-    <div class="text-center mt-4" style="font-size: 0.8rem;">
-        <p>Thank you for shopping with us!</p>
-        <p>Software Developed by <strong>Arefin Nabil</strong></p>
-    </div>
-</div>
+<script>
+// Auto print if ?autoprint=1 is passed (optional feature for future)
+// window.onload = function() { window.print(); }
+</script>
 
 </body>
 </html>
