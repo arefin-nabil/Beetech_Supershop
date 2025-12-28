@@ -59,14 +59,13 @@ $total_pages = ceil($total_rows / $limit);
 
 <div class="card glass-panel border-0">
     <div class="card-body">
-        <!-- Search -->
-        <form method="GET" class="mb-4">
-            <div class="input-group">
+        <!-- Instant Search -->
+        <div class="mb-4">
+             <div class="input-group">
                 <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
-                <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search Invoice, Customer..." value="<?php echo htmlspecialchars($search); ?>">
-                <button class="btn btn-outline-primary" type="submit">Search</button>
+                <input type="text" id="searchSalesInput" class="form-control border-start-0 ps-0" placeholder="Search Invoice, Customer, Mobile..." autocomplete="off">
             </div>
-        </form>
+        </div>
 
         <form method="POST" id="pointsForm">
             <input type="hidden" name="update_points" value="1">
@@ -88,7 +87,7 @@ $total_pages = ceil($total_rows / $limit);
                             <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="salesTableBody">
                         <?php foreach($sales as $s): ?>
                         <tr>
                             <td class="font-monospace fw-bold text-primary">
@@ -141,7 +140,7 @@ $total_pages = ceil($total_rows / $limit);
         </form>
 
         <!-- Pagination -->
-        <nav class="mt-4">
+        <nav class="mt-4" id="paginationNav">
             <ul class="pagination justify-content-center">
                 <?php for($i=1; $i<=$total_pages; $i++): ?>
                     <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
@@ -153,17 +152,72 @@ $total_pages = ceil($total_rows / $limit);
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // Enable submit only if at least one checkbox is checked
-    const checkboxes = document.querySelectorAll('.point-checkbox');
-    const submitBtn = document.getElementById('submitPointsBtn');
-
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', () => {
-             const anyChecked = Array.from(checkboxes).some(c => c.checked);
-             submitBtn.disabled = !anyChecked;
-        });
+$(document).ready(function() {
+    let debounceTimer;
+    
+    // Existing checkbox logic
+    $(document).on('change', '.point-checkbox', function() {
+        const anyChecked = $('.point-checkbox:checked').length > 0;
+        $('#submitPointsBtn').prop('disabled', !anyChecked);
     });
+
+    $('#searchSalesInput').on('input', function() {
+        clearTimeout(debounceTimer);
+        let term = $(this).val();
+
+        if(term.length === 0) {
+           // Return to default view without reload
+           $('#paginationNav').show();
+        } else {
+           $('#paginationNav').hide();
+        }
+
+        debounceTimer = setTimeout(function() {
+            $.get('api.php', { action: 'search_sales', term: term }, function(res) {
+                if(res.success) {
+                    let rows = '';
+                    if(res.data.length === 0) {
+                         rows = '<tr><td colspan="11" class="text-center text-muted">No sales found</td></tr>';
+                    } else {
+                        res.data.forEach(s => {
+                            let date = new Date(s.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+                            let beetech = s.beetech_id ? `<span class="badge bg-warning text-dark">${s.beetech_id}</span>` : '-';
+                            let pointAction = s.points_given == 1 ? 
+                                `<i class="fas fa-check-circle text-success fs-5" title="Given"></i>` :
+                                `<div class="form-check d-flex justify-content-center">
+                                    <input class="form-check-input point-checkbox" type="checkbox" name="sale_ids[]" value="${s.id}">
+                                </div>`;
+
+                            rows += `<tr>
+                                <td class="font-monospace fw-bold text-primary">
+                                    <a href="invoice.php?id=${s.id}" target="_blank" class="text-decoration-none">${s.invoice_no}</a>
+                                </td>
+                                <td class="small text-secondary">${date}</td>
+                                <td><span class="badge bg-light text-dark border">${s.cashier_name || 'Unknown'}</span></td>
+                                <td>${s.customer_name || ''}</td>
+                                <td>${beetech}</td>
+                                <td>${s.item_count}</td>
+                                <td class="fw-bold">৳${parseFloat(s.total_amount).toFixed(2)}</td>
+                                <td class="text-secondary">৳${parseFloat(s.final_discount_amount).toFixed(2)}</td>
+                                <td class="fw-bold text-success">${parseFloat(s.points_earned).toFixed(2)} Pts</td>
+                                <td class="text-center">${pointAction}</td>
+                                <td>
+                                    <a href="invoice.php?id=${s.id}" target="_blank" class="btn btn-sm btn-light text-dark" title="Print Invoice">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </td>
+                            </tr>`;
+                        });
+                    }
+                    $('#salesTableBody').html(rows);
+                    $('#paginationNav').hide();
+                }
+            });
+        }, 300);
+    });
+});
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

@@ -8,7 +8,7 @@ let isManualDiscount = false;
 $(document).ready(function () {
     loadProducts(''); // Initial load
     $('#productSearch').focus(); // Auto focus for immediate scanning
-    
+
     // Admin Check
     if (typeof POS_CONFIG !== 'undefined' && POS_CONFIG.user_role === 'admin') {
         $('#adminOverride').show();
@@ -155,7 +155,7 @@ $(document).ready(function () {
     });
 
     // Admin Override Events
-    $('#manualBeetechToggle').change(function() {
+    $('#manualBeetechToggle').change(function () {
         isManualDiscount = $(this).is(':checked');
         if (isManualDiscount) {
             $('#manualBeetechInputBox').slideDown();
@@ -166,7 +166,7 @@ $(document).ready(function () {
         renderCart(); // Re-calc points based on toggle
     });
 
-    $('#manualDiscount').on('input', function() {
+    $('#manualDiscount').on('input', function () {
         renderCart();
     });
 });
@@ -273,7 +273,7 @@ function renderCart() {
     }
 
     let total = 0;
-    
+
     // Config: 5% of purchase value
     let sharePercent = (typeof POS_CONFIG !== 'undefined') ? POS_CONFIG.profit_share_percent : 0.05;
 
@@ -320,6 +320,7 @@ function renderCart() {
     // 6 Tk Discount = 1 Point
     let estPoints = discountAmount / 6;
     $('#estPoints').text(estPoints.toFixed(2));
+    $('#estAmount').text(discountAmount.toFixed(2));
 
     // Enable checkout only if customer selected
     if (selectedCustomer) {

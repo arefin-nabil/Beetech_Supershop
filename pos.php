@@ -79,7 +79,7 @@ require_once 'includes/header.php';
                 <span class="fw-bold" id="cartSubtotal">0.00</span>
             </div>
                 <span class="text-secondary">Beetech Review</span>
-                <small class="text-success"><i class="fas fa-gift me-1"></i> Points: <span id="estPoints">0</span></small>
+                <small class="text-success"><i class="fas fa-gift me-1"></i> Points: <span id="estPoints">0</span> <span class="text-secondary fw-bold ms-1" style="font-size: 0.9em;">(৳<span id="estAmount">0.00</span>)</span></small>
             </div>
             
             <!-- Admin Override Section -->

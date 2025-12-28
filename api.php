@@ -38,10 +38,30 @@ try {
     } elseif ($action === 'search_customers') {
         $term = clean_input($_GET['term'] ?? '');
         // Search by Mobile, Name, or BeetechID
-        $stmt = $pdo->prepare("SELECT * FROM customers WHERE mobile LIKE :s OR name LIKE :s OR beetech_id LIKE :s LIMIT 10");
+        $stmt = $pdo->prepare("SELECT * FROM customers WHERE mobile LIKE :s OR name LIKE :s OR beetech_id LIKE :s LIMIT 20");
         $stmt->execute(['s' => "%$term%"]);
         $customers = $stmt->fetchAll();
         echo json_encode(['success' => true, 'data' => $customers]);
+
+    } elseif ($action === 'search_sales') {
+        $term = clean_input($_GET['term'] ?? '');
+        $limit = 20;
+        // Search by Invoice, Customer Name, Mobile (via join?), BeetechID.
+        // Joining tables is necessary.
+        $sql = "SELECT s.*, c.name as customer_name, c.mobile, c.beetech_id, u.username as cashier_name,
+                (SELECT COUNT(*) FROM sale_items WHERE sale_id = s.id) as item_count
+                FROM sales s
+                LEFT JOIN customers c ON s.customer_id = c.id
+                LEFT JOIN users u ON s.user_id = u.id
+                WHERE s.invoice_no LIKE :s OR c.name LIKE :s OR c.mobile LIKE :s OR c.beetech_id LIKE :s
+                ORDER BY s.created_at DESC LIMIT :limit";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':s', "%$term%");
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $sales = $stmt->fetchAll();
+        echo json_encode(['success' => true, 'data' => $sales]);
 
     } elseif ($action === 'create_customer') {
         $input = json_decode(file_get_contents('php://input'), true);

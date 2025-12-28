@@ -100,7 +100,7 @@ $stats['net_profit'] = $net_profit;
                 <i class="fas fa-wallet"></i>
             </div>
             <h6 class="text-secondary text-uppercase small fw-bold">Net Profit Today</h6>
-            <h3 class="fw-bold mb-0 <?php echo ($net_profit >= 0) ? 'text-white' : 'text-danger'; ?>">
+            <h3 class="fw-bold mb-0 <?php echo ($net_profit >= 0) ? 'text-success' : 'text-danger'; ?>">
                 <?php echo format_money($net_profit); ?>
             </h3>
         </div>

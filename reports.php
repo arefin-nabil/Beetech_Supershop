@@ -60,7 +60,8 @@ $reports = $stmt->fetchAll();
 
 // 2. Fetch All Invoices for these dates (for expansion)
 // To verify "No missing invoices", we fetch all sales in this range ordered by date
-$inv_sql = "SELECT s.*, DATE_FORMAT(s.created_at, '" . ($report_type == 'monthly' ? '%Y-%m-01' : '%Y-%m-%d') . "') as date_group FROM sales s WHERE $where_sql ORDER BY s.created_at DESC";
+// FIX: We must select date_group as the FIRST column for PDO::FETCH_GROUP to work correctly.
+$inv_sql = "SELECT DATE_FORMAT(s.created_at, '" . ($report_type == 'monthly' ? '%Y-%m-01' : '%Y-%m-%d') . "') as date_group, s.* FROM sales s WHERE $where_sql ORDER BY s.created_at DESC";
 $inv_stmt = $pdo->prepare($inv_sql);
 $inv_stmt->execute($params);
 $all_invoices = $inv_stmt->fetchAll(PDO::FETCH_GROUP); // Group by date_group PHP side
@@ -99,11 +100,11 @@ $grand_net_profit = $grand_total_profit - $grand_total_beetech - $total_period_e
         <div class="card glass-panel border-0">
             <div class="card-body">
                 <form method="GET" class="row g-3 align-items-end">
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold text-secondary">Start Date</label>
                         <input type="date" name="start_date" class="form-control" value="<?php echo $start_date; ?>">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold text-secondary">End Date</label>
                         <input type="date" name="end_date" class="form-control" value="<?php echo $end_date; ?>">
                     </div>
@@ -112,6 +113,17 @@ $grand_net_profit = $grand_total_profit - $grand_total_beetech - $total_period_e
                         <select name="report_type" class="form-select">
                             <option value="daily" <?php echo $report_type == 'daily' ? 'selected' : ''; ?>>Daily</option>
                             <option value="monthly" <?php echo $report_type == 'monthly' ? 'selected' : ''; ?>>Monthly</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary">Seller</label>
+                        <select name="user_id" class="form-select">
+                            <option value="">All Sellers</option>
+                            <?php foreach($users_list as $u): ?>
+                                <option value="<?php echo $u['id']; ?>" <?php echo $user_id == $u['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars(ucfirst($u['username'])); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="col-md-2">

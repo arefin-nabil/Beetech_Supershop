@@ -78,14 +78,13 @@ $total_pages = ceil($total_rows / $limit);
 
 <div class="card glass-panel border-0">
     <div class="card-body">
-        <!-- Search -->
-        <form method="GET" class="mb-4">
+        <!-- Instant Search -->
+        <div class="mb-4">
             <div class="input-group">
                 <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
-                <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search by Mobile, Name, or BeetechID..." value="<?php echo htmlspecialchars($search); ?>">
-                <button class="btn btn-outline-primary" type="submit">Search</button>
+                <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Type Name, Mobile, or BeetechID to search..." autocomplete="off">
             </div>
-        </form>
+        </div>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -99,13 +98,12 @@ $total_pages = ceil($total_rows / $limit);
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="customersTableBody">
                     <?php foreach($customers as $c): ?>
                     <tr>
                         <td><?php echo $c['id']; ?></td>
                         <td class="fw-medium"><?php echo htmlspecialchars($c['name']); ?></td>
                         <td><?php echo htmlspecialchars($c['mobile']); ?></td>
-                        <!-- Beetech ID Highlighted -->
                         <td>
                             <?php if(!empty($c['beetech_id'])): ?>
                                 <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="letter-spacing: 0.5px;">
@@ -128,8 +126,8 @@ $total_pages = ceil($total_rows / $limit);
             </table>
         </div>
         
-        <!-- Pagination -->
-        <nav class="mt-4">
+        <!-- Pagination (Hidden during search if not needed, or simple prev/next implemented later. For instant search, result list usually replaces pagination for simplicity) -->
+        <nav class="mt-4" id="paginationNav">
              <ul class="pagination justify-content-center">
                 <?php for($i=1; $i<=$total_pages; $i++): ?>
                     <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
@@ -140,6 +138,62 @@ $total_pages = ceil($total_rows / $limit);
         </nav>
     </div>
 </div>
+
+<!-- Add/Edit Modal (existing code) -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    let debounceTimer;
+    $('#searchInput').on('input', function() {
+        clearTimeout(debounceTimer);
+        let term = $(this).val();
+
+        if(term.length === 0) {
+           // If empty, just search with empty string (returns default/all) and show pagination
+           // location.reload(); // BAD: Causes focus loss
+           $('#paginationNav').show();
+        } else {
+           $('#paginationNav').hide();
+        }
+
+        debounceTimer = setTimeout(function() {
+            $.get('api.php', { action: 'search_customers', term: term }, function(res) {
+                if(res.success) {
+                    let rows = '';
+                    if(res.data.length === 0) {
+                         rows = '<tr><td colspan="6" class="text-center text-muted">No customers found</td></tr>';
+                    } else {
+                        res.data.forEach(c => {
+                           let beetechBadge = c.beetech_id ? 
+                               `<span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="letter-spacing: 0.5px;">${c.beetech_id}</span>` : 
+                               '<span class="text-muted small">N/A</span>';
+                            
+                            // Safe json encode for attribute
+                            let jsonStr = JSON.stringify(c).replace(/'/g, "&apos;");
+
+                            rows += `<tr>
+                                <td>${c.id}</td>
+                                <td class="fw-medium">${c.name}</td>
+                                <td>${c.mobile}</td>
+                                <td>${beetechBadge}</td>
+                                <td class="text-muted small text-truncate" style="max-width: 200px;">${c.address || ''}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-light text-primary me-2" onclick='editCustomer(${jsonStr})'>
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+                        });
+                    }
+                    $('#customersTableBody').html(rows);
+                    $('#paginationNav').hide(); // Hide pagination during instant search
+                }
+            });
+        }, 300);
+    });
+});
+</script>
 
 <!-- Add/Edit Modal -->
 <div class="modal fade" id="customerModal" tabindex="-1">

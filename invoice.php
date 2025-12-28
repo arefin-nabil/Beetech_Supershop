@@ -196,7 +196,7 @@ foreach($items as $i) {
         <div class="header">
             <div class="store-name"><?php echo APP_NAME; ?></div>
             <div class="store-info">
-                Barmi Bazar, Sreepur, Gazipur<br>
+                Kawraid Bazar, Sreepur, Gazipur<br>
                 01881196146 / 01915430867
             </div>
         </div>
@@ -258,7 +258,7 @@ foreach($items as $i) {
         <!-- Footer -->
         <div class="footer">
             Thanks for shopping!<br>
-            Returns valid within 3 days.
+            Sold items are not returnable.
             <br>---
         </div>
         
