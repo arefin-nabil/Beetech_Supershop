@@ -94,7 +94,7 @@ $total_pages = ceil($total_rows / $limit);
                         <th>Name</th>
                         <th>Mobile</th>
                         <th>BeetechID</th>
-                        <th>Address</th>
+                        <th>Spend / Points</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>

@@ -186,6 +186,25 @@ foreach($items as $i) {
                 margin-top: 5px; /* Minimal top margin */
             }
         }
+
+        /* Paid Stamp Style */
+        .paid-stamp {
+            border: 3px solid #dc3545;
+            color: #dc3545;
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 5px 10px;
+            transform: rotate(-15deg);
+            position: absolute;
+            right: 15px;
+            bottom: 40px; /* moved down from 60px */
+            opacity: 0.6;
+            border-radius: 5px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .receipt { position: relative; }
     </style>
 </head>
 <body>
@@ -217,8 +236,8 @@ foreach($items as $i) {
                 <span><?php echo date('d-m-Y H:i', strtotime($sale['created_at'])); ?></span>
             </div>
             <div class="meta-row">
-                <span>Cust: <?php echo htmlspecialchars(substr($sale['customer_name'], 0, 15)); ?></span> <!-- Truncate name -->
-                <span>By: <?php echo htmlspecialchars($sale['cashier']); ?></span>
+                <span style="flex: 1; margin-right: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Cust: <?php echo htmlspecialchars($sale['customer_name']); ?></span>
+                <span style="white-space: nowrap;">By: <?php echo htmlspecialchars($sale['cashier']); ?></span>
             </div>
         </div>
 
@@ -253,17 +272,10 @@ foreach($items as $i) {
                 <span><?php echo number_format($sale['total_amount'], 2); ?></span>
             </div>
             
-            <div class="divider-solid" style="margin: 5px 0; opacity: 0.5;"></div>
+            <!-- Paid Stamp Input -->
+            <div class="paid-stamp">PAID</div>
 
-             <!-- Paid & Change -->
-            <div class="total-row">
-                <span>Paid:</span>
-                <span><?php echo number_format($sale['paid_amount'] ?? 0, 2); ?></span>
-            </div>
-            <div class="total-row">
-                <span>Change:</span>
-                <span><?php echo number_format($sale['change_amount'] ?? 0, 2); ?></span>
-            </div>
+
 
         <!-- Beetech -->
         <?php if($sale['points_earned'] > 0 || !empty($sale['beetech_id'])): ?>
@@ -276,9 +288,7 @@ foreach($items as $i) {
 
         <!-- Footer -->
         <div class="footer">
-            Thanks for shopping!<br>
-            Sold items are not returnable.
-            <br>---
+            Thanks for shopping with us!
         </div>
         
     </div>

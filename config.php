@@ -7,7 +7,7 @@ define('DB_PASS', '');
 define('DB_NAME', 'pos_systems');
 
 // App Settings
-define('APP_NAME', 'Beetech Mini Super Shop');
+define('APP_NAME', 'Beetech Mini SuperShop');
 define('CURRENCY', '৳');
 define('TIMEZONE', 'Asia/Dhaka');
 
