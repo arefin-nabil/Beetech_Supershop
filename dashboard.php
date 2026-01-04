@@ -44,9 +44,10 @@ $stmt = $pdo->query("
 ");
 $gross_profit = $stmt->fetchColumn() ?: 0;
 
-// 2. Beetech Given (Discounts Today) - used for Net Profit Calc
-$stmt = $pdo->query("SELECT SUM(final_discount_amount) FROM sales WHERE DATE(created_at) = CURDATE()");
-$beetech_given_today = $stmt->fetchColumn() ?: 0;
+// 2. Beetech Given (Points Value Today)
+$stmt = $pdo->query("SELECT SUM(points_earned) FROM sales WHERE DATE(created_at) = CURDATE()");
+$total_points = $stmt->fetchColumn() ?: 0;
+$beetech_given_today = $total_points * 6;
 
 // 3. Expenses Today
 $stmt = $pdo->query("SELECT SUM(amount) FROM expenses WHERE expense_date = CURDATE()");
@@ -159,7 +160,7 @@ $recent_expenses = $stmt->fetchAll();
                                 <th class="ps-4">Invoice</th>
                                 <th>Date</th>
                                 <th class="text-end">Total</th>
-                                <th class="text-end">Points/Disc</th>
+                                <th class="text-end">Beetech Bal</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -174,11 +175,8 @@ $recent_expenses = $stmt->fetchAll();
                                     <td class="fw-bold text-end"><?php echo format_money($sale['total_amount']); ?></td>
                                     <td class="text-end text-success">
                                         <?php 
-                                        if($sale['final_discount_amount'] > 0) {
-                                            echo format_money($sale['final_discount_amount']);
-                                        } else {
-                                            echo '-';
-                                        }
+                                            // Show Beetech Balance (Points * 6)
+                                            echo format_money($sale['points_earned'] * 6);
                                         ?>
                                     </td>
                                     <td>

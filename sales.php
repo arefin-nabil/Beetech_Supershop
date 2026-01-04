@@ -82,7 +82,7 @@ $total_pages = ceil($total_rows / $limit);
                             <th>Items</th>
                             <th>Total (<?php echo CURRENCY; ?>)</th>
                             <th>Discount Amt</th>
-                            <th>Points Won</th>
+                            <th>Beetech Bal</th>
                             <th>Point Given?</th>
                             <th>Action</th>
                         </tr>
@@ -108,7 +108,7 @@ $total_pages = ceil($total_rows / $limit);
                             <td><?php echo $s['item_count']; ?></td>
                             <td class="fw-bold"><?php echo format_money($s['total_amount']); ?></td>
                             <td class="text-secondary"><?php echo format_money($s['final_discount_amount']); ?></td>
-                            <td class="fw-bold text-success"><?php echo number_format($s['points_earned'], 2); ?> Pts</td>
+                            <td class="fw-bold text-success"><?php echo number_format($s['points_earned'] * 6, 2); ?></td>
                             
                              <!-- Point Given Logic -->
                             <td class="text-center">
@@ -201,7 +201,7 @@ $(document).ready(function() {
                                 <td>${s.item_count}</td>
                                 <td class="fw-bold">৳${parseFloat(s.total_amount).toFixed(2)}</td>
                                 <td class="text-secondary">৳${parseFloat(s.final_discount_amount).toFixed(2)}</td>
-                                <td class="fw-bold text-success">${parseFloat(s.points_earned).toFixed(2)} Pts</td>
+                                <td class="fw-bold text-success">${(parseFloat(s.points_earned) * 6).toFixed(2)}</td>
                                 <td class="text-center">${pointAction}</td>
                                 <td>
                                     <a href="invoice.php?id=${s.id}" target="_blank" class="btn btn-sm btn-light text-dark" title="Print Invoice">

@@ -19,15 +19,18 @@ try {
     if ($action === 'search_products') {
         $term = clean_input($_GET['term'] ?? '');
         $allow_zero = isset($_GET['allow_zero_stock']) && $_GET['allow_zero_stock'] == '1';
+        $low_stock_only = isset($_GET['low_stock_only']) && $_GET['low_stock_only'] == '1';
 
         // Search by Name or Barcode
         $sql = "SELECT * FROM products WHERE (name LIKE :s OR barcode LIKE :s) AND is_deleted = 0";
         
-        if (!$allow_zero) {
+        if ($low_stock_only) {
+            $sql .= " AND stock_qty <= alert_threshold";
+        } elseif (!$allow_zero) {
             $sql .= " AND stock_qty > 0";
         }
         
-        $sql .= " LIMIT 20";
+        $sql .= " LIMIT 50"; // Inteased limit for management
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['s' => "%$term%"]);
@@ -254,7 +257,8 @@ try {
             $reward_value = $net_payable * 0.05;
             // Conversion: 6 TK Reward Value = 1 Point
             $points_earned = $reward_value / 6;
-            $points_earned = round($points_earned, 2); 
+            // Store with higher precision (4 decimals) for accurate reverse calculation
+            $points_earned = round($points_earned, 4); 
         } 
         
         // Payment Info

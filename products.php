@@ -89,14 +89,20 @@ $total_pages = ceil($total_rows / $limit);
 <div class="card glass-panel border-0">
     <div class="card-body">
         <!-- Search -->
-        <div class="mb-4">
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
-                <input type="text" id="liveSearch" class="form-control border-start-0 ps-0" placeholder="Search by name or barcode..." autocomplete="off">
-                <button class="btn btn-outline-secondary" type="button" onclick="loadProducts('')">Clear</button>
+        <div class="row g-2 mb-4">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
+                    <input type="text" id="searchProductInput" class="form-control border-start-0 ps-0" placeholder="Search by name or barcode..." autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                 <button type="button" class="btn btn-outline-warning w-100" id="lowStockFilterBtn">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Low Stock Items
+                </button>
             </div>
         </div>
-
+        <button class="btn btn-outline-secondary" type="button" onclick="loadProducts('')">Clear</button>
         <form action="barcode_print.php" method="POST" id="bulkPrintForm">
             <div class="d-flex justify-content-end mb-2">
                 <button type="submit" name="bulk_print" class="btn btn-outline-dark btn-sm">
@@ -139,78 +145,96 @@ $total_pages = ceil($total_rows / $limit);
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    loadProducts();
+let lowStockOnly = false; // Global variable to track filter state
+let debounceTimer; // Global variable for debounce
 
-    // Live Search
-    let debounceTimer;
-    document.getElementById('liveSearch').addEventListener('input', function() {
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('productTableBody');
+    const spinner = document.getElementById('loadingSpinner');
+
+    // Initial Load
+    loadProducts('');
+
+    $('#lowStockFilterBtn').on('click', function() {
+        lowStockOnly = !lowStockOnly;
+        $(this).toggleClass('active btn-warning text-dark btn-outline-warning');
+        
+        if(lowStockOnly) {
+            $(this).html('<i class="fas fa-times me-2"></i> Clear Filter');
+        } else {
+            $(this).html('<i class="fas fa-exclamation-triangle me-2"></i> Low Stock Items');
+        }
+        
+        loadProducts($('#searchProductInput').val());
+    });
+
+    $('#searchProductInput').on('input', function() {
         clearTimeout(debounceTimer);
-        const term = this.value;
-        debounceTimer = setTimeout(() => {
+        let term = $(this).val();
+        debounceTimer = setTimeout(function() {
             loadProducts(term);
         }, 300);
     });
-});
+}); // End DOMContentLoaded
 
-function loadProducts(term = '') {
+function loadProducts(term) {
     const tbody = document.getElementById('productTableBody');
     const spinner = document.getElementById('loadingSpinner');
     
-    tbody.innerHTML = '';
     spinner.classList.remove('d-none');
-
-    // Use existing API but we need an action that returns product list for Admin (with buy price etc)
-    // The existing 'search_products' action in api.php returns limited fields?
-    // Let's check api.php again. It returns `SELECT *`. So it has everything.
-    // It has LIMIT 20. We might want to increase that for admin management or use pagination.
-    // For now, let's use the existing one but maybe add a parameter to increase limit or add a new action 'admin_search_products'.
-    // Let's try to use 'search_products' first.
+    tbody.innerHTML = '';
     
-    fetch('api.php?action=search_products&allow_zero_stock=1&term=' + encodeURIComponent(term))
-        .then(response => response.json())
-        .then(res => {
-            spinner.classList.add('d-none');
-            if(res.success && res.data.length > 0) {
-                res.data.forEach(p => {
-                    const tr = document.createElement('tr');
-                    
-                    // Stock Badge Logic
-                    let stockBadge = '';
-                    if(parseInt(p.stock_qty) <= parseInt(p.alert_threshold)) {
-                        stockBadge = `<span class="badge bg-danger rounded-pill">${p.stock_qty}</span>`;
-                    } else {
-                        stockBadge = `<span class="badge bg-success rounded-pill">${p.stock_qty}</span>`;
-                    }
+    // API Call
+    
+    let url = 'api.php?action=search_products&allow_zero_stock=1&term=' + encodeURIComponent(term);
+    if(lowStockOnly) {
+        url += '&low_stock_only=1';
+    }
 
-                    tr.innerHTML = `
-                        <td><input type="checkbox" name="selected_products[]" value="${p.id}" class="form-check-input product-check"></td>
-                        <td class="font-monospace text-secondary">${p.barcode}</td>
-                        <td class="fw-medium">${p.name}</td>
-                        <td>${parseFloat(p.buy_price).toFixed(2)}</td>
-                        <td class="fw-bold text-success">${parseFloat(p.sell_price).toFixed(2)}</td>
-                        <td>${stockBadge}</td>
-                        <td>${p.alert_threshold}</td>
-                        <td class="text-end">
-                            <button type="button" class="btn btn-sm btn-light text-primary me-2" onclick='editProduct(${JSON.stringify(p)})'>
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-light text-danger" onclick="deleteProduct(${p.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No products found</td></tr>';
-            }
-        })
-        .catch(err => {
-            spinner.classList.add('d-none');
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error loading data</td></tr>';
-            console.error(err);
-        });
+    fetch(url)
+    .then(response => response.json())
+    .then(res => {
+        spinner.classList.add('d-none');
+        if(res.success && res.data.length > 0) {
+            res.data.forEach(p => {
+                const tr = document.createElement('tr');
+                
+                // Stock Badge Logic
+                let stockBadge = '';
+                if(parseInt(p.stock_qty) <= parseInt(p.alert_threshold)) {
+                    stockBadge = `<span class="badge bg-danger rounded-pill">${p.stock_qty}</span>`;
+                } else {
+                    stockBadge = `<span class="badge bg-success rounded-pill">${p.stock_qty}</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td><input type="checkbox" name="selected_products[]" value="${p.id}" class="form-check-input product-check"></td>
+                    <td class="font-monospace text-secondary">${p.barcode}</td>
+                    <td class="fw-medium">${p.name}</td>
+                    <td>${parseFloat(p.buy_price).toFixed(2)}</td>
+                    <td class="fw-bold text-success">${parseFloat(p.sell_price).toFixed(2)}</td>
+                    <td>${stockBadge}</td>
+                    <td>${p.alert_threshold}</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-light text-primary me-2" onclick='editProduct(${JSON.stringify(p)})'>
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light text-danger" onclick="deleteProduct(${p.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No products found</td></tr>';
+        }
+    })
+    .catch(err => {
+        spinner.classList.add('d-none');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error loading data</td></tr>';
+        console.error(err);
+    });
 }
 </script>
 
