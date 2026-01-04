@@ -266,10 +266,24 @@ foreach($items as $i) {
         <div class="divider-solid"></div>
 
         <!-- Totals -->
-            <!-- Grand Total -->
+            <!-- Subtotal -->
+             <div class="total-row">
+                <span>Subtotal:</span>
+                <span><?php echo number_format($sale['total_amount'], 2); ?></span>
+            </div>
+
+            <!-- Discount -->
+            <?php if ($sale['final_discount_amount'] > 0): ?>
+            <div class="total-row">
+                <span>Discount:</span>
+                <span>- <?php echo number_format($sale['final_discount_amount'], 2); ?></span>
+            </div>
+            <?php endif; ?>
+
+            <!-- Net Total -->
             <div class="total-row grand-total">
                 <span>TOTAL:</span>
-                <span><?php echo number_format($sale['total_amount'], 2); ?></span>
+                <span><?php echo number_format($sale['total_amount'] - $sale['final_discount_amount'], 2); ?></span>
             </div>
             
             <!-- Paid Stamp Input -->

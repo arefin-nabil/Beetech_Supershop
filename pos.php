@@ -90,16 +90,20 @@ require_once 'includes/header.php';
                 <small class="text-success fw-bold"><i class="fas fa-gift me-1"></i> <span id="estPoints">0</span> <span class="text-secondary fw-normal ms-1" style="font-size: 0.85em;">(৳<span id="estAmount">0.00</span>)</span></small>
             </div>
             
-            <!-- Admin Override Section -->
+            <!-- Manual Discount Section -->
             <div class="mb-3" id="adminOverride" style="display: none;">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="manualBeetechToggle">
-                    <label class="form-check-label small text-secondary" for="manualBeetechToggle">Admin Override (Manual Discount)</label>
+                    <label class="form-check-label small text-secondary" for="manualBeetechToggle">Add Manual Discount (BDT)</label>
                 </div>
                 <div class="mt-2" id="manualBeetechInputBox" style="display: none;">
-                    <div class="input-group input-group-sm">
+                    <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text">BDT</span>
-                        <input type="number" id="manualDiscount" class="form-control" placeholder="Enter Discount Amount" min="0" step="0.01">
+                        <input type="number" id="manualDiscount" class="form-control" placeholder="Discount Amount" min="0" step="0.01">
+                    </div>
+                    <div class="input-group input-group-sm">
+                         <span class="input-group-text"><i class="fas fa-star text-warning"></i></span>
+                        <input type="number" id="manualPoints" class="form-control" placeholder="Points Value (BDT)" min="0" step="0.01">
                     </div>
                 </div>
             </div>

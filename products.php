@@ -89,13 +89,13 @@ $total_pages = ceil($total_rows / $limit);
 <div class="card glass-panel border-0">
     <div class="card-body">
         <!-- Search -->
-        <form method="GET" class="mb-4">
+        <div class="mb-4">
             <div class="input-group">
                 <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
-                <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search by name or barcode..." value="<?php echo htmlspecialchars($search); ?>">
-                <button class="btn btn-outline-primary" type="submit">Search</button>
+                <input type="text" id="liveSearch" class="form-control border-start-0 ps-0" placeholder="Search by name or barcode..." autocomplete="off">
+                <button class="btn btn-outline-secondary" type="button" onclick="loadProducts('')">Clear</button>
             </div>
-        </form>
+        </div>
 
         <form action="barcode_print.php" method="POST" id="bulkPrintForm">
             <div class="d-flex justify-content-end mb-2">
@@ -117,52 +117,102 @@ $total_pages = ceil($total_rows / $limit);
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php foreach($products as $p): ?>
-                        <tr>
-                            <td><input type="checkbox" name="selected_products[]" value="<?php echo $p['id']; ?>" class="form-check-input product-check"></td>
-                            <td class="font-monospace text-secondary"><?php echo htmlspecialchars($p['barcode']); ?></td>
-                            <td class="fw-medium"><?php echo htmlspecialchars($p['name']); ?></td>
-                            <td><?php echo format_money($p['buy_price']); ?></td>
-                            <td class="fw-bold text-success"><?php echo format_money($p['sell_price']); ?></td>
-                            <td>
-                                <?php if($p['stock_qty'] <= $p['alert_threshold']): ?>
-                                    <span class="badge bg-danger rounded-pill"><?php echo $p['stock_qty']; ?></span>
-                                <?php else: ?>
-                                    <span class="badge bg-success rounded-pill"><?php echo $p['stock_qty']; ?></span>
-                                <?php endif; ?>
-                            </td>
-                            <td><?php echo $p['alert_threshold']; ?></td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-light text-primary me-2" 
-                                    onclick='editProduct(<?php echo json_encode($p); ?>)'>
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <!-- Individual Delete Form (Need to be careful nesting forms, better to use JS or keep outside) -->
-                                <!-- Since we wrapped main table in form, we shouldn't nest another form. Change delete to link or JS submit -->
-                                <button type="button" class="btn btn-sm btn-light text-danger" onclick="deleteProduct(<?php echo $p['id']; ?>)">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
+                    <tbody id="productTableBody">
+                        <!-- Loaded via JS -->
                     </tbody>
                 </table>
             </div>
+            <div id="loadingSpinner" class="text-center py-4 d-none">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            </div>
         </form>
 
-        <!-- Pagination -->
-        <nav class="mt-4">
+        <!-- Pagination Controls (Hidden if searching) -->
+        <nav class="mt-4" id="paginationControls">
             <ul class="pagination justify-content-center">
-                <?php for($i=1; $i<=$total_pages; $i++): ?>
-                    <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
-                    </li>
-                <?php endfor; ?>
+                <!-- JS will populate if needed, or we just rely on Load More / Scroll for admin? 
+                     Let's keep it simple: Search searches everything (limit 50), Empty shows first 50.
+                -->
             </ul>
         </nav>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadProducts();
+
+    // Live Search
+    let debounceTimer;
+    document.getElementById('liveSearch').addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const term = this.value;
+        debounceTimer = setTimeout(() => {
+            loadProducts(term);
+        }, 300);
+    });
+});
+
+function loadProducts(term = '') {
+    const tbody = document.getElementById('productTableBody');
+    const spinner = document.getElementById('loadingSpinner');
+    
+    tbody.innerHTML = '';
+    spinner.classList.remove('d-none');
+
+    // Use existing API but we need an action that returns product list for Admin (with buy price etc)
+    // The existing 'search_products' action in api.php returns limited fields?
+    // Let's check api.php again. It returns `SELECT *`. So it has everything.
+    // It has LIMIT 20. We might want to increase that for admin management or use pagination.
+    // For now, let's use the existing one but maybe add a parameter to increase limit or add a new action 'admin_search_products'.
+    // Let's try to use 'search_products' first.
+    
+    fetch('api.php?action=search_products&allow_zero_stock=1&term=' + encodeURIComponent(term))
+        .then(response => response.json())
+        .then(res => {
+            spinner.classList.add('d-none');
+            if(res.success && res.data.length > 0) {
+                res.data.forEach(p => {
+                    const tr = document.createElement('tr');
+                    
+                    // Stock Badge Logic
+                    let stockBadge = '';
+                    if(parseInt(p.stock_qty) <= parseInt(p.alert_threshold)) {
+                        stockBadge = `<span class="badge bg-danger rounded-pill">${p.stock_qty}</span>`;
+                    } else {
+                        stockBadge = `<span class="badge bg-success rounded-pill">${p.stock_qty}</span>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td><input type="checkbox" name="selected_products[]" value="${p.id}" class="form-check-input product-check"></td>
+                        <td class="font-monospace text-secondary">${p.barcode}</td>
+                        <td class="fw-medium">${p.name}</td>
+                        <td>${parseFloat(p.buy_price).toFixed(2)}</td>
+                        <td class="fw-bold text-success">${parseFloat(p.sell_price).toFixed(2)}</td>
+                        <td>${stockBadge}</td>
+                        <td>${p.alert_threshold}</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-light text-primary me-2" onclick='editProduct(${JSON.stringify(p)})'>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light text-danger" onclick="deleteProduct(${p.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No products found</td></tr>';
+            }
+        })
+        .catch(err => {
+            spinner.classList.add('d-none');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error loading data</td></tr>';
+            console.error(err);
+        });
+}
+</script>
 
 <!-- Add/Edit Modal -->
 <div class="modal fade" id="productModal" tabindex="-1">

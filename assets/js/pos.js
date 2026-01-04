@@ -188,6 +188,9 @@ $(document).ready(function () {
     $('#manualDiscount').on('input', function () {
         renderCart();
     });
+    $('#manualPoints').on('input', function () {
+        renderCart();
+    });
 });
 
 function loadProducts(term) {
@@ -323,23 +326,38 @@ function renderCart() {
     $('#cartTotal').text(total.toFixed(2));
     $('#cartSubtotal').text(total.toFixed(2));
 
-    // Calculate Est Points
+    // Manual Discount Logic
     let discountAmount = 0;
-
     if (isManualDiscount) {
         let manualVal = parseFloat($('#manualDiscount').val());
         if (!isNaN(manualVal) && manualVal >= 0) {
             discountAmount = manualVal;
         }
-    } else {
-        // Auto: 5% of total
-        discountAmount = total * sharePercent;
     }
 
-    // 6 Tk Discount = 1 Point
-    let estPoints = discountAmount / 6;
+    let netTotal = total - discountAmount;
+    if (netTotal < 0) netTotal = 0;
+
+    $('#cartTotal').text(netTotal.toFixed(2));
+
+    // Beetech Points Logic
+    // If Manual Points Value (BDT) is entered, use it. Points = Value / 6.
+
+    let manualPointsVal = parseFloat($('#manualPoints').val());
+    let estPoints = 0;
+    let rewardValue = 0;
+
+    if (isManualDiscount && !isNaN(manualPointsVal) && manualPointsVal >= 0) {
+        rewardValue = manualPointsVal;
+        estPoints = rewardValue / 6;
+        $('#estAmount').text(rewardValue.toFixed(2)); // Show the manual value
+    } else {
+        rewardValue = netTotal * 0.05;
+        estPoints = rewardValue / 6;
+        $('#estAmount').text(rewardValue.toFixed(2));
+    }
+
     $('#estPoints').text(estPoints.toFixed(2));
-    $('#estAmount').text(discountAmount.toFixed(2));
 
     // Enable checkout only if customer selected
     if (selectedCustomer) {
@@ -437,6 +455,11 @@ function confirmCheckout() {
         let manualVal = parseFloat($('#manualDiscount').val());
         if (!isNaN(manualVal) && manualVal >= 0) {
             payload.manual_discount = manualVal;
+        }
+        let manualPtsValue = parseFloat($('#manualPoints').val());
+        if (!isNaN(manualPtsValue) && manualPtsValue >= 0) {
+            // Convert Value (BDT) to Points
+            payload.manual_points = manualPtsValue / 6;
         }
     }
 

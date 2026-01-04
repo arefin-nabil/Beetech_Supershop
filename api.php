@@ -18,8 +18,18 @@ $action = $_GET['action'] ?? '';
 try {
     if ($action === 'search_products') {
         $term = clean_input($_GET['term'] ?? '');
+        $allow_zero = isset($_GET['allow_zero_stock']) && $_GET['allow_zero_stock'] == '1';
+
         // Search by Name or Barcode
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE (name LIKE :s OR barcode LIKE :s) AND stock_qty > 0 AND is_deleted = 0 LIMIT 20");
+        $sql = "SELECT * FROM products WHERE (name LIKE :s OR barcode LIKE :s) AND is_deleted = 0";
+        
+        if (!$allow_zero) {
+            $sql .= " AND stock_qty > 0";
+        }
+        
+        $sql .= " LIMIT 20";
+
+        $stmt = $pdo->prepare($sql);
         $stmt->execute(['s' => "%$term%"]);
         $products = $stmt->fetchAll();
         echo json_encode(['success' => true, 'data' => $products]);
@@ -215,16 +225,37 @@ try {
         $manual_discount_input = $input['manual_discount'] ?? null;
 
         if ($manual_discount_input !== null && is_numeric($manual_discount_input)) {
-            // Admin override
+            // Manual Discount (BDT Amount)
             $final_discount_amount = (float)$manual_discount_input;
         } else {
-            // Auto Calculation: 5% of Total Amount
-            $final_discount_amount = $total_amount * 0.05;
+            // Default: 0 Discount if not specified (or should we keep old auto 5%? Request implies Manual Option)
+            // The request says "manual discount option... if purchase 403, give 3 tk discount... beetech point on 400"
+            // It implies the discount is manual. If no discount given?
+            // "if there is no bdt discount given,, it wont show in invoice"
+            // So default is 0.
+            $final_discount_amount = 0;
         }
         
-        // Point Conversion: 6 TK = 1 Point (from discount amount)
-        $points_earned = $final_discount_amount / 6;
-        $points_earned = round($points_earned, 2); 
+        // Net Payable
+        $net_payable = $total_amount - $final_discount_amount;
+        if($net_payable < 0) $net_payable = 0;
+
+        // Point Calculation: 
+        // Logic: If Manual Points provided, use it. Else 5% of Net Payable / 6.
+        
+        $points_earned = 0;
+        $manual_points_input = $input['manual_points'] ?? null;
+        
+        if ($manual_points_input !== null && is_numeric($manual_points_input)) {
+             $points_earned = (float)$manual_points_input;
+        } else {
+            // Standard Rule
+            // Reward Value = 5% of Net Payable
+            $reward_value = $net_payable * 0.05;
+            // Conversion: 6 TK Reward Value = 1 Point
+            $points_earned = $reward_value / 6;
+            $points_earned = round($points_earned, 2); 
+        } 
         
         // Payment Info
         // If not sent, default to total_amount (exact change)
