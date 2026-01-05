@@ -289,42 +289,44 @@ body {
     .product-grid {
         /* Inherit 2 columns from global */
         gap: 0.5rem;
+        align-content: start;
+        /* Prevent stretching */
+        grid-auto-rows: max-content;
+        /* Respect item height */
     }
 
     .product-card {
-        height: auto !important;
-        min-height: auto;
+        height: 60px !important;
+        /* Fixed height for List View items */
+        min-height: 60px;
         border: 1px solid #ddd;
-    }
-
-    .product-card {
-        height: auto !important;
-        min-height: 80px;
-        padding: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        display: flex;
+        align-items: center;
+        /* Center content vertically */
     }
 
     .product-details {
-        height: auto !important;
-        flex-grow: 1;
+        width: 100%;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        text-align: center;
+        text-align: left;
         padding: 0;
     }
 
     .product-details .text-truncate {
-        white-space: normal;
+        white-space: nowrap;
+        /* Truncate properly in list view */
         font-size: 0.9rem;
         line-height: 1.2;
-        margin-bottom: 0.25rem;
-        max-height: 2.4em;
-        overflow: hidden;
+        margin-bottom: 0.1rem;
     }
 
     .product-details .d-flex {
-        justify-content: center !important;
-        margin-top: auto;
+        width: 100%;
+        justify-content: space-between !important;
+        /* Price Left, Qty Right or similar */
         gap: 0.5rem;
     }
 }

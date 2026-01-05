@@ -15,7 +15,7 @@ require_once 'includes/header.php';
 </script>
 <div class="pos-layout">
     <!-- Left: Product Section -->
-    <div class="d-flex flex-column h-100 overflow-hidden">
+    <div class="d-flex flex-column h-100 overflow-hidden" style="min-width: 0;">
         <!-- Search Bar -->
         <div class="mb-3">
              <div class="input-group input-group-lg shadow-sm">
