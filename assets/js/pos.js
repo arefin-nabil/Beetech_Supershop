@@ -224,14 +224,11 @@ function renderProductGrid(data) {
     data.forEach(p => {
         let card = $(`
             <div class="product-card" onclick='addToCart(${JSON.stringify(p)})'>
-                <div class="product-img-box">
-                    ${p.image ? `<img src="${p.image}" class="img-fluid">` : '<i class="fas fa-box fa-2x"></i>'}
-                </div>
-                <div class="product-details">
-                    <div class="text-truncate fw-bold mb-1">${p.name}</div>
+                <div class="product-details p-2">
+                    <div class="fw-bold mb-1 text-primary text-truncate">${p.name}</div>
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="fw-bold text-primary">৳${p.sell_price}</div>
-                        <div class="stock-badge bg-light border">Qty: ${p.stock_qty}</div>
+                        <div class="fw-bold small">৳${p.sell_price}</div>
+                        <div class="stock-badge bg-light border small">Qty: ${p.stock_qty}</div>
                     </div>
                 </div>
             </div>

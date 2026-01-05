@@ -175,10 +175,13 @@ body {
 
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+    /* Default to 2 columns List View */
+    gap: 0.5rem;
     overflow-y: auto;
     padding-right: 0.5rem;
+    min-height: 0;
+    /* Critical for Flexbox scrolling */
 }
 
 .product-card {
@@ -284,12 +287,14 @@ body {
     }
 
     .product-grid {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        /* Inherit 2 columns from global */
+        gap: 0.5rem;
     }
 
-    /* Hide Images on Laptop to prioritize Text */
-    .product-img-box {
-        display: none !important;
+    .product-card {
+        height: auto !important;
+        min-height: auto;
+        border: 1px solid #ddd;
     }
 
     .product-card {
