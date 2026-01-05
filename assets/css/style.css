@@ -216,7 +216,46 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
+    padding: 0;
+    width: 100%;
+}
+
+/* Global List View Styles (Applied to all screens) */
+.product-card {
+    height: auto !important;
+    /* Allow grow */
+    min-height: 80px;
+    /* Taller default */
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.product-details {
+    text-align: left;
+}
+
+.product-details .text-truncate {
+    white-space: normal;
+    /* Allow wrapping */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* Limit to 2 lines */
+    -webkit-box-orient: vertical;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+}
+
+.product-details .d-flex {
+    width: 100%;
+    justify-content: space-between !important;
+    align-items: center;
+    margin-top: auto;
 }
 
 .stock-badge {
@@ -287,46 +326,6 @@ body {
     }
 
     .product-grid {
-        /* Inherit 2 columns from global */
-        gap: 0.5rem;
-        align-content: start;
-        /* Prevent stretching */
-        grid-auto-rows: max-content;
-        /* Respect item height */
-    }
-
-    .product-card {
-        height: 60px !important;
-        /* Fixed height for List View items */
-        min-height: 60px;
-        border: 1px solid #ddd;
-        padding: 0.25rem 0.5rem;
-        display: flex;
-        align-items: center;
-        /* Center content vertically */
-    }
-
-    .product-details {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        text-align: left;
-        padding: 0;
-    }
-
-    .product-details .text-truncate {
-        white-space: nowrap;
-        /* Truncate properly in list view */
-        font-size: 0.9rem;
-        line-height: 1.2;
-        margin-bottom: 0.1rem;
-    }
-
-    .product-details .d-flex {
-        width: 100%;
-        justify-content: space-between !important;
-        /* Price Left, Qty Right or similar */
         gap: 0.5rem;
     }
 }
