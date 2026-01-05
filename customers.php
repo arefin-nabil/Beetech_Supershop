@@ -22,26 +22,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // "BeetechID must be highlighted... Customer table has BeetechID"
     // Assuming it's a manual entry or generated. We will treat as string.
 
-    if ($action === 'add') {
-        try {
-            $stmt = $pdo->prepare("INSERT INTO customers (name, mobile, address, beetech_id) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $mobile, $address, $beetech_id]);
-            set_flash_message('success', 'Customer added successfully!');
-            header("Location: customers.php");
-            exit;
-        } catch (PDOException $e) {
-            $error_msg = "Error adding customer: " . $e->getMessage();
+    // Check Duplicate Mobile (if adding or if editing a different ID)
+    $checkSql = "SELECT id FROM customers WHERE mobile = ?";
+    $params = [$mobile];
+    if ($action === 'edit' && $id) {
+        $checkSql .= " AND id != ?";
+        $params[] = $id;
+    }
+    
+    $dupHeader = false;
+    try {
+        $stmt = $pdo->prepare($checkSql);
+        $stmt->execute($params);
+        if ($stmt->fetch()) {
+            $error_msg = "Customer with this mobile number already exists!";
+        } else {
+             if ($action === 'add') {
+                $stmt = $pdo->prepare("INSERT INTO customers (name, mobile, address, beetech_id) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$name, $mobile, $address, $beetech_id]);
+                set_flash_message('success', 'Customer added successfully!');
+                header("Location: customers.php");
+                exit;
+            } elseif ($action === 'edit' && $id) {
+                $stmt = $pdo->prepare("UPDATE customers SET name=?, mobile=?, address=?, beetech_id=? WHERE id=?");
+                $stmt->execute([$name, $mobile, $address, $beetech_id, $id]);
+                set_flash_message('success', 'Customer updated successfully!');
+                header("Location: customers.php");
+                exit;
+            }
         }
-    } elseif ($action === 'edit' && $id) {
-        try {
-            $stmt = $pdo->prepare("UPDATE customers SET name=?, mobile=?, address=?, beetech_id=? WHERE id=?");
-            $stmt->execute([$name, $mobile, $address, $beetech_id, $id]);
-            set_flash_message('success', 'Customer updated successfully!');
-            header("Location: customers.php");
-            exit;
-        } catch (PDOException $e) {
-            $error_msg = "Error updating customer: " . $e->getMessage();
-        }
+    } catch (PDOException $e) {
+        $error_msg = "Database Error: " . $e->getMessage();
+    }
+}
+
+// Handle Delete
+if (isset($_GET['delete_id'])) {
+    $del_id = $_GET['delete_id'];
+    try {
+        $stmt = $pdo->prepare("DELETE FROM customers WHERE id = ?");
+        $stmt->execute([$del_id]);
+        set_flash_message('success', 'Customer deleted successfully!');
+        header("Location: customers.php");
+        exit;
+    } catch (PDOException $e) {
+       $error_msg = "Cannot delete customer. They might have existing sales history.";
     }
 }
 
@@ -143,15 +168,18 @@ $total_pages = ceil($total_rows / $limit);
                         </td>
                         <td class="text-end">
                             <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-info" title="ID Card" onclick='showCard(<?php echo json_encode($c); ?>)'>
+                                <button class="btn btn-sm btn-outline-info btn-card-customer" title="ID Card" data-customer='<?php echo htmlspecialchars(json_encode($c), ENT_QUOTES, 'UTF-8'); ?>'>
                                     <i class="fas fa-id-card"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary" title="History" onclick='showHistory(<?php echo $c['id']; ?>, "<?php echo htmlspecialchars($c['name']); ?>")'>
+                                <button class="btn btn-sm btn-outline-secondary btn-history-customer" title="History" data-id="<?php echo $c['id']; ?>" data-name="<?php echo htmlspecialchars($c['name'], ENT_QUOTES); ?>">
                                     <i class="fas fa-history"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick='editCustomer(<?php echo json_encode($c); ?>)'>
+                                <button class="btn btn-sm btn-outline-primary btn-edit-customer" title="Edit" data-customer='<?php echo htmlspecialchars(json_encode($c), ENT_QUOTES, 'UTF-8'); ?>'>
                                     <i class="fas fa-edit"></i>
                                 </button>
+                                <a href="?delete_id=<?php echo $c['id']; ?>" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this customer?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>
@@ -382,7 +410,24 @@ $(document).ready(function() {
             });
         }, 300);
     });
+    // Delegated Events for dynamic buttons (Search or Initial)
+    $(document).on('click', '.btn-edit-customer', function() {
+        let c = $(this).data('customer');
+        editCustomer(c);
+    });
+
+    $(document).on('click', '.btn-history-customer', function() {
+        let id = $(this).data('id');
+        let name = $(this).data('name');
+        showHistory(id, name);
+    });
+
+    $(document).on('click', '.btn-card-customer', function() {
+        let c = $(this).data('customer');
+        showCard(c);
+    });
 });
+
 
 
 function resetForm() {

@@ -137,6 +137,10 @@ try {
             exit;
         }
 
+        // Handle Beetech ID: If empty, set to NULL to avoid unique constraint if unique index exists
+        // Assuming beetech_id column allows NULL and has a UNIQUE index.
+        $beetech_id = empty($beetech_id) ? null : $beetech_id;
+
         $stmt = $pdo->prepare("INSERT INTO customers (name, mobile, address, beetech_id, created_at) VALUES (?, ?, ?, ?, NOW())");
         if ($stmt->execute([$name, $mobile, $address, $beetech_id])) {
             $id = $pdo->lastInsertId();

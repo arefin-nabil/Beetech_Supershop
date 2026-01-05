@@ -20,19 +20,19 @@ $(document).ready(function () {
         clearTimeout(debounceTimer);
         let val = $(this).val();
 
-        // If it looks like a barcode (numeric & long), search immediately
-        if (/^\d{8,}$/.test(val)) {
-            fetchProductByBarcode(val);
-        } else {
-            debounceTimer = setTimeout(() => {
-                loadProducts(val);
-            }, 300);
-        }
+        // Removed aggressive barcode regex check (/^\d{8,}$/) to prevent double-entry.
+        // Barcode scanners typically send an Enter key, which is handled in the keypress event.
+
+        debounceTimer = setTimeout(() => {
+            loadProducts(val);
+        }, 300);
     });
 
     // Press enter on search to try auto-add if only 1 result or exact barcode
     $('#productSearch').on('keypress', function (e) {
         if (e.which == 13) {
+            clearTimeout(debounceTimer); // Stop any pending search from typing
+
             let val = $(this).val();
             // 1. Try Product Barcode first
             $.get('api.php', { action: 'get_product_by_barcode', barcode: val }, function (res) {
@@ -40,6 +40,7 @@ $(document).ready(function () {
                     addToCart(res.data);
                     $('#productSearch').val('').focus();
                     $('#searchResults').hide();
+                    loadProducts(''); // Reload default product list visually
                 } else {
                     // 2. If not product, try Customer ID (assuming 5-7 digits)
                     if (val.length >= 5 && val.length <= 11) { // Mobile or Custom ID

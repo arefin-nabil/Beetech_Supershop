@@ -28,11 +28,11 @@ $stmt = $pdo->query("SELECT COUNT(*) FROM customers");
 $stats['total_customers'] = $stmt->fetchColumn();
 
 // Sales Today (Points and Discounts are separate, we track raw total here)
-$stmt = $pdo->query("SELECT SUM(total_amount) FROM sales WHERE DATE(created_at) = CURDATE()");
+$stmt = $pdo->query("SELECT SUM(total_amount - final_discount_amount) FROM sales WHERE DATE(created_at) = CURDATE()");
 $stats['sales_today'] = $stmt->fetchColumn() ?: 0;
 
 // Sales Month
-$stmt = $pdo->query("SELECT SUM(total_amount) FROM sales WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())");
+$stmt = $pdo->query("SELECT SUM(total_amount - final_discount_amount) FROM sales WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())");
 $stats['sales_month'] = $stmt->fetchColumn() ?: 0;
 
 // 1. Profit (Sell - Buy)
@@ -172,7 +172,7 @@ $recent_expenses = $stmt->fetchAll();
                                 <tr>
                                     <td class="ps-4 font-monospace"><?php echo $sale['invoice_no']; ?></td>
                                     <td class="small text-secondary"><?php echo date('d M, h:i A', strtotime($sale['created_at'])); ?></td>
-                                    <td class="fw-bold text-end"><?php echo format_money($sale['total_amount']); ?></td>
+                                    <td class="fw-bold text-end"><?php echo format_money($sale['total_amount'] - $sale['final_discount_amount']); ?></td>
                                     <td class="text-end text-success">
                                         <?php 
                                             // Show Beetech Balance (Points * 6)

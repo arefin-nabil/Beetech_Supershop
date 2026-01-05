@@ -106,7 +106,7 @@ $total_pages = ceil($total_rows / $limit);
                                 <?php endif; ?>
                             </td>
                             <td><?php echo $s['item_count']; ?></td>
-                            <td class="fw-bold"><?php echo format_money($s['total_amount']); ?></td>
+                            <td class="fw-bold"><?php echo format_money($s['total_amount'] - $s['final_discount_amount']); ?></td>
                             <td class="text-secondary"><?php echo format_money($s['final_discount_amount']); ?></td>
                             <td class="fw-bold text-success"><?php echo number_format($s['points_earned'] * 6, 2); ?></td>
                             
@@ -199,7 +199,7 @@ $(document).ready(function() {
                                 <td>${s.customer_name || ''}</td>
                                 <td>${beetech}</td>
                                 <td>${s.item_count}</td>
-                                <td class="fw-bold">৳${parseFloat(s.total_amount).toFixed(2)}</td>
+                                <td class="fw-bold">৳${parseFloat(s.total_amount - s.final_discount_amount).toFixed(2)}</td>
                                 <td class="text-secondary">৳${parseFloat(s.final_discount_amount).toFixed(2)}</td>
                                 <td class="fw-bold text-success">${(parseFloat(s.points_earned) * 6).toFixed(2)}</td>
                                 <td class="text-center">${pointAction}</td>
