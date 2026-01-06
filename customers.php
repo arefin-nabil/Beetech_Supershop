@@ -131,7 +131,7 @@ $total_pages = ceil($total_rows / $limit);
                     $stats = [];
                     if(!empty($ids)) {
                         $in = str_repeat('?,', count($ids) - 1) . '?';
-                        $stat_sql = "SELECT customer_id, SUM(total_amount) as total_spend, SUM(points_earned) as total_points 
+                        $stat_sql = "SELECT customer_id, SUM(total_amount - COALESCE(final_discount_amount, 0)) as total_spend, SUM(points_earned) as total_points 
                                      FROM sales WHERE customer_id IN ($in) GROUP BY customer_id";
                         $stmt_stat = $pdo->prepare($stat_sql);
                         $stmt_stat->execute($ids);

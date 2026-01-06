@@ -53,7 +53,7 @@ try {
         // Search by Mobile, Name, or BeetechID
         // We need totals for the table
         $sql = "SELECT c.*, 
-                (SELECT SUM(s.total_amount) FROM sales s WHERE s.customer_id = c.id) as total_spend,
+                (SELECT SUM(s.total_amount - COALESCE(s.final_discount_amount, 0)) FROM sales s WHERE s.customer_id = c.id) as total_spend,
                 (SELECT SUM(s.points_earned) FROM sales s WHERE s.customer_id = c.id) as total_points
                 FROM customers c 
                 WHERE c.mobile LIKE :s OR c.name LIKE :s OR c.beetech_id LIKE :s 
@@ -87,7 +87,7 @@ try {
         $sales = $stmt->fetchAll();
         
         // Calculate totals
-        $stmtPath = $pdo->prepare("SELECT SUM(total_amount) as total_spend, SUM(points_earned) as total_points FROM sales WHERE customer_id = ?");
+        $stmtPath = $pdo->prepare("SELECT SUM(total_amount - COALESCE(final_discount_amount, 0)) as total_spend, SUM(points_earned) as total_points FROM sales WHERE customer_id = ?");
         $stmtPath->execute([$cid]);
         $totals = $stmtPath->fetch();
         
