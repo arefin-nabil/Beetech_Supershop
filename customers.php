@@ -400,6 +400,9 @@ $(document).ready(function() {
                                         <button class="btn btn-sm btn-outline-primary" title="Edit" onclick='editCustomer(${cJson})'>
                                             <i class="fas fa-edit"></i>
                                         </button>
+                                        <a href="?delete_id=${c.id}" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this customer?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>`;
@@ -513,9 +516,6 @@ function showHistory(cid, name) {
             
             // Stats
             $('#histTotalSpend').text(parseFloat(res.summary.total_spend || 0).toFixed(2));
-            $('#histTotalPoints').text(parseFloat(res.summary.total_points || 0).toFixed(2));
-        }
-    });
             $('#histTotalPoints').text(parseFloat(res.summary.total_points || 0).toFixed(2));
         }
     });
