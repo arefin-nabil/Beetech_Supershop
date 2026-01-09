@@ -20,12 +20,28 @@ $(document).ready(function () {
         clearTimeout(debounceTimer);
         let val = $(this).val();
 
+        // Toggle Clear Button
+        if (val.length > 0) {
+            $('#clearSearchBtn').removeClass('d-none');
+            $('#productSearch').addClass('border-end-0');
+        } else {
+            $('#clearSearchBtn').addClass('d-none');
+            $('#productSearch').removeClass('border-end-0');
+        }
+
         // Removed aggressive barcode regex check (/^\d{8,}$/) to prevent double-entry.
         // Barcode scanners typically send an Enter key, which is handled in the keypress event.
 
         debounceTimer = setTimeout(() => {
             loadProducts(val);
         }, 300);
+    });
+
+    // Clear Search Button Handler
+    $('#clearSearchBtn').click(function () {
+        $('#productSearch').val('').focus().removeClass('border-end-0');
+        $(this).addClass('d-none');
+        loadProducts('');
     });
 
     // Press enter on search to try auto-add if only 1 result or exact barcode

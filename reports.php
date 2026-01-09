@@ -37,7 +37,7 @@ $sql_fixed = "
     SELECT 
         date_group,
         COUNT(id) as total_invoices,
-        SUM(total_amount) as revenue,
+        SUM(total_amount - final_discount_amount) as revenue,
         SUM(points_earned * 6) as beetech_value,
         SUM(sale_profit) as gross_profit
     FROM (

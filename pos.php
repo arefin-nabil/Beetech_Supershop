@@ -18,9 +18,10 @@ require_once 'includes/header.php';
     <div class="d-flex flex-column h-100 overflow-hidden" style="min-width: 0;">
         <!-- Search Bar -->
         <div class="mb-3">
-             <div class="input-group input-group-lg shadow-sm">
+            <div class="input-group input-group-lg shadow-sm">
                 <span class="input-group-text bg-white border-end-0 text-primary"><i class="fas fa-search"></i></span>
                 <input type="text" id="productSearch" class="form-control border-start-0" placeholder="Scan Barcode or Search Product..." autocomplete="off">
+                 <button class="btn btn-white border border-start-0 text-secondary d-none" type="button" id="clearSearchBtn" style="background-color: white;"><i class="fas fa-times"></i></button>
             </div>
         </div>
 

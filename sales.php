@@ -100,7 +100,12 @@ $total_pages = ceil($total_rows / $limit);
                             <td><?php echo htmlspecialchars($s['customer_name']); ?></td>
                             <td>
                                  <?php if(!empty($s['beetech_id'])): ?>
-                                    <span class="badge bg-warning text-dark"><?php echo htmlspecialchars($s['beetech_id']); ?></span>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-warning text-dark"><?php echo htmlspecialchars($s['beetech_id']); ?></span>
+                                        <button class="btn btn-link btn-sm p-0 ms-1 text-secondary" onclick="copyToClipboard('<?php echo $s['beetech_id']; ?>')" title="Copy ID">
+                                            <i class="far fa-copy"></i>
+                                        </button>
+                                    </div>
                                 <?php else: ?>
                                     -
                                 <?php endif; ?>

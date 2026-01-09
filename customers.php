@@ -140,11 +140,11 @@ $total_pages = ceil($total_rows / $limit);
                         }
                     }
                     
-                    foreach($customers as $c): 
-                        $s = $stats[$c['id']] ?? ['total_spend' => 0, 'total_points' => 0];
+                    foreach($customers as $index => $c): 
+                            $s = $stats[$c['id']] ?? ['total_spend' => 0, 'total_points' => 0];
                     ?>
                     <tr>
-                        <td><?php echo $c['id']; ?></td>
+                        <td><?php echo $total_rows - $offset - $index; ?></td>
                         <td class="fw-medium">
                             <?php echo htmlspecialchars($c['name']); ?>
                             <div class="small text-muted d-block d-md-none"><?php echo htmlspecialchars($c['mobile']); ?></div>
@@ -155,9 +155,6 @@ $total_pages = ceil($total_rows / $limit);
                                 <span class="badge bg-primary px-2 rounded-pill" style="letter-spacing: 0.5px;">
                                     <?php echo htmlspecialchars($c['beetech_id']); ?>
                                 </span>
-                                <button class="btn btn-link btn-sm p-0 ms-1 text-secondary" onclick="copyToClipboard('<?php echo $c['beetech_id']; ?>')" title="Copy ID">
-                                    <i class="far fa-copy"></i>
-                                </button>
                             <?php else: ?>
                                 <span class="text-muted small">N/A</span>
                             <?php endif; ?>
@@ -365,20 +362,19 @@ $(document).ready(function() {
                     if(res.data.length === 0) {
                          rows = '<tr><td colspan="6" class="text-center text-muted">No customers found</td></tr>';
                     } else {
-                        res.data.forEach(c => {
+                        res.data.forEach((c, index) => {
                             // Safe JSON for onclick
                             let cJson = JSON.stringify(c).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
                             
                             let beetech = c.beetech_id ? 
-                                `<span class="badge bg-primary px-2 rounded-pill" style="letter-spacing: 0.5px;">${c.beetech_id}</span>
-                                 <button class="btn btn-link btn-sm p-0 ms-1 text-secondary" onclick="copyToClipboard('${c.beetech_id}')" title="Copy ID"><i class="far fa-copy"></i></button>` : 
+                                `<span class="badge bg-primary px-2 rounded-pill" style="letter-spacing: 0.5px;">${c.beetech_id}</span>` : 
                                 `<span class="text-muted small">N/A</span>`;
 
                             let spend = parseFloat(c.total_spend || 0).toFixed(2);
                             let points = parseFloat(c.total_points || 0).toFixed(2);
 
                             rows += `<tr>
-                                <td>${c.id}</td>
+                                <td>${res.data.length - index}</td>
                                 <td class="fw-medium">
                                     ${c.name}
                                     <div class="small text-muted d-block d-md-none">${c.mobile}</div>
@@ -521,16 +517,6 @@ function showHistory(cid, name) {
     });
 }
 
-function copyToClipboard(text) {
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(function() {
-        // Optional: Tooltip or toast? For now just a simple visual feedback could be nice but let's stick to system clipboard
-        // Maybe change icon temporarily?
-        alert('Copied: ' + text); // Simple feedback
-    }, function(err) {
-        console.error('Async: Could not copy text: ', err);
-    });
-}
-</script>
+
 
 <?php require_once 'includes/footer.php'; ?>
