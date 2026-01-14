@@ -16,6 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mobile = clean_input($_POST['mobile']);
     $address = clean_input($_POST['address']);
     // Convert empty Beetech ID to NULL to prevent unique constraint violation on empty strings
+    $id = $_POST['customer_id'] ?? null;
+    $beetech_id = clean_input($_POST['beetech_id'] ?? '');
+
+
     if (empty($beetech_id)) {
         $beetech_id = null;
     }
