@@ -175,8 +175,8 @@ body {
 
 .product-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    /* Default to 2 columns List View */
+    grid-template-columns: repeat(3, 1fr);
+    /* Changed to 3 columns */
     gap: 0.5rem;
     overflow-y: auto;
     padding-right: 0.5rem;

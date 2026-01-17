@@ -28,25 +28,45 @@ $limit = 20; // More rows for sales
 $offset = ($page - 1) * $limit;
 
 // Query with User and Customer joins
+// Query with User and Customer joins
+$points_filter = $_GET['points_filter'] ?? '';
+$where_clauses = ["(s.invoice_no LIKE :s OR c.name LIKE :s OR c.beetech_id LIKE :s)"];
+$params = [':s' => "%$search%"];
+
+if ($points_filter === 'given') {
+    $where_clauses[] = "s.points_given = 1";
+} elseif ($points_filter === 'not_given') {
+    $where_clauses[] = "s.points_given = 0";
+}
+
+$where_sql = implode(' AND ', $where_clauses);
+
 $sql = "SELECT s.*, c.name as customer_name, c.beetech_id, u.username as cashier_name,
         (SELECT COUNT(*) FROM sale_items WHERE sale_id = s.id) as item_count
         FROM sales s
         LEFT JOIN customers c ON s.customer_id = c.id
         LEFT JOIN users u ON s.user_id = u.id
-        WHERE s.invoice_no LIKE :s OR c.name LIKE :s OR c.beetech_id LIKE :s
+        WHERE $where_sql
         ORDER BY s.created_at DESC
         LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
-$stmt->bindValue(':s', "%$search%");
+foreach ($params as $k => $v) {
+    $stmt->bindValue($k, $v);
+}
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $sales = $stmt->fetchAll();
 
 // Total
-$count_stmt = $pdo->prepare("SELECT COUNT(*) FROM sales s LEFT JOIN customers c ON s.customer_id = c.id WHERE s.invoice_no LIKE :s OR c.name LIKE :s");
-$count_stmt->execute(['s' => "%$search%"]);
+// Total
+$count_sql = "SELECT COUNT(*) FROM sales s LEFT JOIN customers c ON s.customer_id = c.id WHERE $where_sql";
+$count_stmt = $pdo->prepare($count_sql);
+foreach ($params as $k => $v) {
+    $count_stmt->bindValue($k, $v);
+}
+$count_stmt->execute();
 $total_rows = $count_stmt->fetchColumn();
 $total_pages = ceil($total_rows / $limit);
 ?>
@@ -59,11 +79,20 @@ $total_pages = ceil($total_rows / $limit);
 
 <div class="card glass-panel border-0">
     <div class="card-body">
-        <!-- Instant Search -->
-        <div class="mb-4">
-             <div class="input-group">
-                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
-                <input type="text" id="searchSalesInput" class="form-control border-start-0 ps-0" placeholder="Search Invoice, Customer, Mobile..." autocomplete="off">
+        <!-- Instant Search & Filter -->
+        <div class="row g-2 mb-4">
+            <div class="col-md-9">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
+                    <input type="text" id="searchSalesInput" class="form-control border-start-0 ps-0" placeholder="Search Invoice, Customer, Mobile..." autocomplete="off" value="<?php echo htmlspecialchars($search); ?>">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="pointsFilter" onchange="applyFilter(this.value)">
+                    <option value="">All Status</option>
+                    <option value="given" <?php echo (isset($_GET['points_filter']) && $_GET['points_filter'] === 'given') ? 'selected' : ''; ?>>Points Given</option>
+                    <option value="not_given" <?php echo (isset($_GET['points_filter']) && $_GET['points_filter'] === 'not_given') ? 'selected' : ''; ?>>Points Not Given</option>
+                </select>
             </div>
         </div>
 
@@ -149,7 +178,7 @@ $total_pages = ceil($total_rows / $limit);
             <ul class="pagination justify-content-center">
                 <?php for($i=1; $i<=$total_pages; $i++): ?>
                     <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
+                        <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&points_filter=<?php echo urlencode($points_filter); ?>"><?php echo $i; ?></a>
                     </li>
                 <?php endfor; ?>
             </ul>
@@ -168,19 +197,32 @@ $(document).ready(function() {
         $('#submitPointsBtn').prop('disabled', !anyChecked);
     });
 
+// Filter Logic
+    window.applyFilter = function(val) {
+        let url = new URL(window.location.href);
+        url.searchParams.set('points_filter', val);
+        url.searchParams.set('page', 1);
+        window.location.href = url.toString();
+    };
+
     $('#searchSalesInput').on('input', function() {
         clearTimeout(debounceTimer);
         let term = $(this).val();
+        let filter = $('#pointsFilter').val();
 
         if(term.length === 0) {
-           // Return to default view without reload
-           $('#paginationNav').show();
+           // If search is cleared, we might want to reload to respect the filter with pagination?
+           // Or just show pagination if we are on page 1?
+           // Simpler: Just allow the API to return the results for empty term + filter.
+           // However, if we want to restore PHP pagination, we should probably just reload if term becomes empty?
+           // But user experience is better if we just fetch data.
+           $('#paginationNav').hide(); // Hide PHP pagination when searching/filtering via JS
         } else {
            $('#paginationNav').hide();
         }
 
         debounceTimer = setTimeout(function() {
-            $.get('api.php', { action: 'search_sales', term: term }, function(res) {
+            $.get('api.php', { action: 'search_sales', term: term, points_filter: filter }, function(res) {
                 if(res.success) {
                     let rows = '';
                     if(res.data.length === 0) {
@@ -217,7 +259,6 @@ $(document).ready(function() {
                         });
                     }
                     $('#salesTableBody').html(rows);
-                    $('#paginationNav').hide();
                 }
             });
         }, 300);

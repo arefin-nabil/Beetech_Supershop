@@ -30,7 +30,7 @@ try {
             $sql .= " AND stock_qty > 0";
         }
         
-        $sql .= " LIMIT 50"; // Inteased limit for management
+        $sql .= " LIMIT 200"; // Inteased limit for management
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['s' => "%$term%"]);
@@ -57,7 +57,7 @@ try {
                 (SELECT SUM(s.points_earned) FROM sales s WHERE s.customer_id = c.id) as total_points
                 FROM customers c 
                 WHERE c.mobile LIKE :s OR c.name LIKE :s OR c.beetech_id LIKE :s 
-                LIMIT 20";
+                LIMIT 30";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['s' => "%$term%"]);
         $customers = $stmt->fetchAll();
@@ -99,15 +99,26 @@ try {
 
     } elseif ($action === 'search_sales') {
         $term = clean_input($_GET['term'] ?? '');
+        $points_filter = clean_input($_GET['points_filter'] ?? '');
         $limit = 20;
+        
         // Search by Invoice, Customer Name, Mobile (via join?), BeetechID.
-        // Joining tables is necessary.
+        $where_clauses = ["(s.invoice_no LIKE :s OR c.name LIKE :s OR c.mobile LIKE :s OR c.beetech_id LIKE :s)"];
+        
+        if ($points_filter === 'given') {
+            $where_clauses[] = "s.points_given = 1";
+        } elseif ($points_filter === 'not_given') {
+            $where_clauses[] = "s.points_given = 0";
+        }
+        
+        $where_sql = implode(' AND ', $where_clauses);
+
         $sql = "SELECT s.*, c.name as customer_name, c.mobile, c.beetech_id, u.username as cashier_name,
                 (SELECT COUNT(*) FROM sale_items WHERE sale_id = s.id) as item_count
                 FROM sales s
                 LEFT JOIN customers c ON s.customer_id = c.id
                 LEFT JOIN users u ON s.user_id = u.id
-                WHERE s.invoice_no LIKE :s OR c.name LIKE :s OR c.mobile LIKE :s OR c.beetech_id LIKE :s
+                WHERE $where_sql
                 ORDER BY s.created_at DESC LIMIT :limit";
         
         $stmt = $pdo->prepare($sql);

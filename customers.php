@@ -75,7 +75,7 @@ if (isset($_GET['delete_id'])) {
 // Search
 $search = $_GET['search'] ?? '';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$limit = 10;
+$limit = 30;
 $offset = ($page - 1) * $limit;
 
 // Search by Mobile or BeetechID
@@ -92,10 +92,17 @@ $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM customers WHERE mobile LIKE :s
 $count_stmt->execute(['s' => "%$search%"]);
 $total_rows = $count_stmt->fetchColumn();
 $total_pages = ceil($total_rows / $limit);
+
+// Absolute total customers count
+$total_all_stmt = $pdo->query("SELECT COUNT(*) FROM customers");
+$total_all_customers = $total_all_stmt->fetchColumn();
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-primary">Customer Management</h2>
+    <h2 class="fw-bold text-primary">
+        Customer Management
+        <span class="badge bg-secondary fs-5 align-middle ms-2"><?= $total_all_customers ?></span>
+    </h2>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customerModal" onclick="resetForm()">
         <i class="fas fa-user-plus me-2"></i> Add Customer
     </button>
