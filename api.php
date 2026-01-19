@@ -30,7 +30,7 @@ try {
             $sql .= " AND stock_qty > 0";
         }
         
-        $sql .= " LIMIT 200"; // Inteased limit for management
+        $sql .= " ORDER BY name ASC LIMIT 200"; // Inteased limit for management
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['s' => "%$term%"]);

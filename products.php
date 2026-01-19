@@ -62,7 +62,7 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
 
-$sql = "SELECT * FROM products WHERE is_deleted=0 AND (name LIKE :s OR barcode LIKE :s) ORDER BY id DESC LIMIT :limit OFFSET :offset";
+$sql = "SELECT * FROM products WHERE is_deleted=0 AND (name LIKE :s OR barcode LIKE :s) ORDER BY name ASC LIMIT :limit OFFSET :offset";
 $stmt = $pdo->prepare($sql);
 $stmt->bindValue(':s', "%$search%");
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
