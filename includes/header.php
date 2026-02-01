@@ -65,6 +65,10 @@ $page_title = $page_title ?? APP_NAME;
                 <i class="fas fa-file-invoice-dollar"></i> Expenses
             </a>
 
+            <a href="investments.php" class="nav-link <?php echo (($current_page ?? '') == 'investments') ? 'active' : ''; ?>">
+                <i class="fas fa-hand-holding-usd"></i> Investments
+            </a>
+
             <a href="products.php" class="nav-link <?php echo (($current_page ?? '') == 'products') ? 'active' : ''; ?>">
                 <i class="fas fa-box"></i> Products
             </a>
