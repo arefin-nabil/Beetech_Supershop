@@ -23,7 +23,7 @@ if (!$sale) {
 }
 
 // Fetch Items
-$stmt = $pdo->prepare("SELECT si.*, p.name FROM sale_items si JOIN products p ON si.product_id = p.id WHERE si.sale_id = ?");
+$stmt = $pdo->prepare("SELECT si.*, COALESCE(p.name, si.custom_name) as name FROM sale_items si LEFT JOIN products p ON si.product_id = p.id WHERE si.sale_id = ?");
 $stmt->execute([$id]);
 $items = $stmt->fetchAll();
 

@@ -20,10 +20,18 @@ try {
         $term = clean_input($_GET['term'] ?? '');
         $allow_zero = isset($_GET['allow_zero_stock']) && $_GET['allow_zero_stock'] == '1';
         $low_stock_only = isset($_GET['low_stock_only']) && $_GET['low_stock_only'] == '1';
+        $category = clean_input($_GET['category'] ?? '');
 
         // Search by Name or Barcode
         $sql = "SELECT * FROM products WHERE (name LIKE :s OR barcode LIKE :s) AND is_deleted = 0";
         
+        $params = ['s' => "%$term%"];
+        
+        if (!empty($category)) {
+            $sql .= " AND category = :cat";
+            $params['cat'] = $category;
+        }
+
         if ($low_stock_only) {
             $sql .= " AND stock_qty <= alert_threshold";
         } elseif (!$allow_zero) {
@@ -33,7 +41,7 @@ try {
         $sql .= " ORDER BY name ASC LIMIT 200"; // Inteased limit for management
 
         $stmt = $pdo->prepare($sql);
-        $stmt->execute(['s' => "%$term%"]);
+        $stmt->execute($params);
         $products = $stmt->fetchAll();
         echo json_encode(['success' => true, 'data' => $products]);
 
@@ -197,6 +205,26 @@ try {
         foreach ($cart as $item) {
             $p_id = $item['id'];
             $qty = $item['qty'];
+            
+            $is_custom = $item['is_custom'] ?? false;
+            
+            if ($is_custom) {
+                $buy = 0;
+                $sell = (float)($item['sell_price'] ?? 0);
+                $subtotal = $sell * $qty;
+                $total_amount += $subtotal;
+                $total_profit += $subtotal;
+                
+                $sale_items_data[] = [
+                    'product_id' => null,
+                    'custom_name' => clean_input($item['name']),
+                    'qty' => $qty,
+                    'buy' => $buy,
+                    'sell' => $sell,
+                    'subtotal' => $subtotal
+                ];
+                continue;
+            }
 
             $stmt = $pdo->prepare("SELECT * FROM products WHERE id = :id FOR UPDATE");
             $stmt->execute(['id' => $p_id]);
@@ -223,6 +251,7 @@ try {
             // Prepare item data for insertion
             $sale_items_data[] = [
                 'product_id' => $p_id,
+                'custom_name' => null,
                 'qty' => $qty,
                 'buy' => $buy,
                 'sell' => $sell,
@@ -298,12 +327,13 @@ try {
         $sale_id = $pdo->lastInsertId();
 
         // 4. Insert Items
-        $stmt_item = $pdo->prepare("INSERT INTO sale_items (sale_id, product_id, quantity, unit_buy_price, unit_sell_price, subtotal) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt_item = $pdo->prepare("INSERT INTO sale_items (sale_id, product_id, custom_name, quantity, unit_buy_price, unit_sell_price, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
         foreach ($sale_items_data as $si) {
             $stmt_item->execute([
                 $sale_id,
                 $si['product_id'],
+                $si['custom_name'],
                 $si['qty'],
                 $si['buy'],
                 $si['sell'],

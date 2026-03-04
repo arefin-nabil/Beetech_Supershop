@@ -498,3 +498,37 @@ function confirmCheckout() {
         }
     });
 }
+
+function addCustomToCart() {
+    let name = $('#customItemName').val().trim();
+    let price = parseFloat($('#customItemPrice').val());
+    let qty = parseInt($('#customItemQty').val());
+
+    if (!name || isNaN(price) || isNaN(qty) || qty < 1) {
+        alert('Please fill out all custom item fields correctly.');
+        return;
+    }
+
+    let customItem = {
+        id: 'custom_' + Date.now(),
+        name: name,
+        barcode: 'CUSTOM',
+        sell_price: price,
+        stock_qty: 99999, // Bypass local checks
+        qty: qty,
+        is_custom: true
+    };
+
+    // Close Modal safely
+    const mEl = document.getElementById('customItemModal');
+    if (mEl) {
+        let mInst = bootstrap.Modal.getInstance(mEl);
+        if (mInst) mInst.hide();
+    }
+
+    $('#customItemForm')[0].reset();
+    $('#customItemQty').val(1);
+
+    cart.push(customItem);
+    renderCart();
+}

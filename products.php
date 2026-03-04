@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'add';
     $name = clean_input($_POST['name'] ?? '');
     $barcode = clean_input($_POST['barcode'] ?? '');
+    $category = clean_input($_POST['category'] ?? 'Uncategorized');
     $buy_price = floatval($_POST['buy_price']);
     $sell_price = floatval($_POST['sell_price']);
     $stock_qty = intval($_POST['stock_qty']);
@@ -25,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'add') {
         try {
-            $stmt = $pdo->prepare("INSERT INTO products (name, barcode, buy_price, sell_price, stock_qty, alert_threshold) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $barcode, $buy_price, $sell_price, $stock_qty, $alert]);
+            $stmt = $pdo->prepare("INSERT INTO products (name, barcode, category, buy_price, sell_price, stock_qty, alert_threshold) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $barcode, $category, $buy_price, $sell_price, $stock_qty, $alert]);
             set_flash_message('success', 'Product added successfully!');
             header("Location: products.php");
             exit;
@@ -35,8 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'edit' && $id) {
         try {
-            $stmt = $pdo->prepare("UPDATE products SET name=?, barcode=?, buy_price=?, sell_price=?, stock_qty=?, alert_threshold=? WHERE id=?");
-            $stmt->execute([$name, $barcode, $buy_price, $sell_price, $stock_qty, $alert, $id]);
+            $stmt = $pdo->prepare("UPDATE products SET name=?, barcode=?, category=?, buy_price=?, sell_price=?, stock_qty=?, alert_threshold=? WHERE id=?");
+            $stmt->execute([$name, $barcode, $category, $buy_price, $sell_price, $stock_qty, $alert, $id]);
             set_flash_message('success', 'Product updated successfully!');
             header("Location: products.php");
             exit;
@@ -101,6 +102,16 @@ $total_all_products = $total_all_stmt->fetchColumn();
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-secondary"></i></span>
                     <input type="text" id="searchProductInput" class="form-control border-start-0 ps-0" placeholder="Search by name or barcode..." autocomplete="off">
+                    <select class="form-select border-start-0" id="categoryFilter" style="max-width: 200px;">
+                        <option value="">All Categories</option>
+                        <option value="Liquid Items">Liquid Items</option>
+                        <option value="Consumer">Consumer</option>
+                        <option value="Rice/Sugar/Salt">Rice/Sugar/Salt</option>
+                        <option value="Snacks">Snacks (Chips, Cake, Cookies)</option>
+                        <option value="Spices/Food Additives">Spices/Food Additives</option>
+                        <option value="Toiletries">Toiletries</option>
+                        <option value="Others">Others</option>
+                    </select>
                 </div>
             </div>
             <div class="col-md-4 text-end">
@@ -123,6 +134,7 @@ $total_all_products = $total_all_stmt->fetchColumn();
                             <th style="width: 40px;"><input type="checkbox" class="form-check-input" id="selectAll"></th>
                             <th>Barcode</th>
                             <th>Name</th>
+                            <th>Category</th>
                             <th>Buy Price</th>
                             <th>Sell Price</th>
                             <th>Stock</th>
@@ -182,6 +194,15 @@ document.addEventListener('DOMContentLoaded', function() {
             loadProducts(term);
         }, 300);
     });
+
+    $('#categoryFilter').on('change', function() {
+        loadProducts($('#searchProductInput').val());
+    });
+
+    // Automatically focus the product name input when the modal is opened
+    document.getElementById('productModal').addEventListener('shown.bs.modal', function () {
+        document.getElementById('pName').focus();
+    });
 }); // End DOMContentLoaded
 
 function loadProducts(term) {
@@ -194,6 +215,10 @@ function loadProducts(term) {
     // API Call
     
     let url = 'api.php?action=search_products&allow_zero_stock=1&term=' + encodeURIComponent(term);
+    let cat = $('#categoryFilter').val();
+    if(cat) {
+        url += '&category=' + encodeURIComponent(cat);
+    }
     if(lowStockOnly) {
         url += '&low_stock_only=1';
     }
@@ -218,6 +243,7 @@ function loadProducts(term) {
                     <td><input type="checkbox" name="selected_products[]" value="${p.id}" class="form-check-input product-check"></td>
                     <td class="font-monospace text-secondary">${p.barcode}</td>
                     <td class="fw-medium">${p.name}</td>
+                    <td><span class="badge bg-light text-dark border">${p.category || 'Uncategorized'}</span></td>
                     <td>${parseFloat(p.buy_price).toFixed(2)}</td>
                     <td class="fw-bold text-success">${parseFloat(p.sell_price).toFixed(2)}</td>
                     <td>${stockBadge}</td>
@@ -264,11 +290,17 @@ function loadProducts(term) {
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Barcode (EAN-13 Numeric)</label>
-                        <div class="input-group">
-                            <input type="text" name="barcode" id="pBarcode" class="form-control" required pattern="[0-9]+">
-                            <button type="button" class="btn btn-outline-secondary" onclick="generateBarcode()">Generate</button>
-                        </div>
+                        <label class="form-label">Category</label>
+                        <select name="category" id="pCategory" class="form-select">
+                            <option value="Uncategorized">Uncategorized</option>
+                            <option value="Liquid Items">Liquid Items (Soft Drinks, Juice)</option>
+                            <option value="Consumer">Consumer (Soap, Dishwasher)</option>
+                            <option value="Rice/Sugar/Salt">Rice/Sugar/Salt</option>
+                            <option value="Snacks">Snacks (Chips, Cake, Cookies, Noodles, Ice Cream)</option>
+                            <option value="Spices/Food Additives">Spices/Food Additives (Colors, Flavors, Oil)</option>
+                            <option value="Toiletries">Toiletries (Tissue, etc.)</option>
+                            <option value="Others">Others</option>
+                        </select>
                     </div>
 
                     <div class="row">
@@ -290,6 +322,14 @@ function loadProducts(term) {
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Low Stock Alert</label>
                             <input type="number" name="alert_threshold" id="pAlert" class="form-control" value="5">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Barcode (EAN-13 Numeric)</label>
+                        <div class="input-group">
+                            <input type="text" name="barcode" id="pBarcode" class="form-control" required pattern="[0-9]+">
+                            <button type="button" class="btn btn-outline-secondary" onclick="generateBarcode()">Generate</button>
                         </div>
                     </div>
                 </div>
@@ -356,6 +396,7 @@ function editProduct(product) {
     document.getElementById('productId').value = product.id;
     document.getElementById('pName').value = product.name;
     document.getElementById('pBarcode').value = product.barcode;
+    document.getElementById('pCategory').value = product.category || 'Uncategorized';
     document.getElementById('pBuy').value = product.buy_price;
     document.getElementById('pSell').value = product.sell_price;
     document.getElementById('pStock').value = product.stock_qty;

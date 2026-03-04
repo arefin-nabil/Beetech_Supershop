@@ -64,6 +64,13 @@ require_once 'includes/header.php';
             </div>
         </div>
 
+        <!-- Cart Control -->
+        <div class="px-3 bg-light border-bottom d-flex justify-content-between align-items-center py-2">
+            <span class="mb-0 text-secondary small fw-bold text-uppercase">Cart Items</span>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#customItemModal">
+                <i class="fas fa-plus"></i> Custom Item
+            </button>
+        </div>
         <!-- Cart Items -->
         <div class="cart-items" id="cartItemsContainer">
             <!-- Empty State -->
@@ -190,6 +197,39 @@ require_once 'includes/header.php';
                 <button class="btn btn-primary btn-lg w-100 rounded-pill py-3" onclick="confirmCheckout()" id="confirmPayBtn">
                     <i class="fas fa-print me-2"></i> Confirm & Print
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Item Modal -->
+<div class="modal fade" id="customItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-panel border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary">Add Custom POS Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customItemForm">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small text-uppercase fw-bold">Item Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="customItemName" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-secondary small text-uppercase fw-bold">Unit Price (৳) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" id="customItemPrice" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-secondary small text-uppercase fw-bold">Quantity <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="customItemQty" value="1" min="1" required>
+                        </div>
+                    </div>
+                    <div class="d-grid mt-2">
+                        <button type="button" class="btn btn-primary" onclick="addCustomToCart()">Add to Invoice</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
