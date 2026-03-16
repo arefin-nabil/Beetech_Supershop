@@ -325,12 +325,12 @@ function renderCart() {
                 </div>
                 <div class="d-flex align-items-center">
                     <div class="btn-group btn-group-sm me-2">
-                        <button class="btn btn-outline-secondary px-2" onclick="updateQty(${item.id}, -1)">-</button>
+                        <button class="btn btn-outline-secondary px-2" onclick="updateQty('${item.id}', -1)">-</button>
                         <button class="btn btn-outline-secondary px-2" disabled>${item.qty}</button>
-                        <button class="btn btn-outline-secondary px-2" onclick="updateQty(${item.id}, 1)">+</button>
+                        <button class="btn btn-outline-secondary px-2" onclick="updateQty('${item.id}', 1)">+</button>
                     </div>
                     <div class="fw-bold me-2" style="width: 60px; text-align: right;">${lineTotal.toFixed(2)}</div>
-                    <button class="btn btn-sm text-danger" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm text-danger" onclick="removeFromCart('${item.id}')"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `);

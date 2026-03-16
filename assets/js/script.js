@@ -15,6 +15,11 @@ $(document).ready(function () {
   setTimeout(function () {
     $('.alert-dismissible').fadeOut('slow');
   }, 5000);
+
+  // Auto-focus first input on any modal shown globally
+  $('.modal').on('shown.bs.modal', function () {
+    $(this).find('input[type="text"], input[type="number"], textarea, select').filter(':visible:first').focus();
+  });
 });
 
 function copyToClipboard(text) {
